@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from drf_spectacular.utils import extend_schema_serializer
 from django.core.validators import RegexValidator
+from django.contrib.auth.hashers import make_password, check_password
 import re
 class UserSerializer(serializers.ModelSerializer):
     
@@ -26,4 +27,12 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_password(self, value):
         if len(value) < 7:
             raise serializers.ValidationError('Password must be at least 7 characters')
-        return value
+        
+        return make_password(value)
+    
+    def get(self):
+        data = self.data
+        return {
+            'username': data['username'],
+            'email': data['email']
+        }
