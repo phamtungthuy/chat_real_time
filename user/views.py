@@ -5,9 +5,23 @@ from drf_spectacular.types import OpenApiTypes
 from .serializer import UserSerializer
 from django.contrib.auth.models import User
 from .response import ResponseSerializer, SuccessResponseSerializer
+from rest_framework.decorators import permission_classes, action
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 @extend_schema(tags=['User'])
-class UserViewSet(viewsets.ModelViewSet):    
+class UserViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+   
+   
+    def get_permissions(self):
+        # Allow all actions except retrieve
+        if self.action == 'retrieve':
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [AllowAny]
+        return [permission() for permission in permission_classes]
+
+
     @extend_schema(
         responses={
             200: OpenApiResponse(response=SuccessResponseSerializer,
@@ -18,6 +32,8 @@ class UserViewSet(viewsets.ModelViewSet):
         # more customizations
     )
 
+
+    @action(detail=False, permission_classes=[IsAuthenticated])
     def retrieve(self, request, id=None, username=None):
         try:
             if id is None:
