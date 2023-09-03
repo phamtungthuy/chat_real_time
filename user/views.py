@@ -47,10 +47,6 @@ class UserViewSet(viewsets.ModelViewSet):
     
     def create(self, request):
         data = request.data
-        if any(field not in data for field in ['username', 'email', 'password']):
-            return Response({
-                'message': 'username, email and password must be provided',
-                }, status=status.HTTP_400_BAD_REQUEST)
         serializer = UserSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -64,9 +60,60 @@ class UserViewSet(viewsets.ModelViewSet):
             break
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     
+    @extend_schema(
+        request={
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "password": {"type": "string"},
+                    "email": {"type": "string"}},
+            },
+        },
+        responses={
+            200: OpenApiResponse(response=SuccessResponseSerializer,
+                                 description="Operations successfully"),
+            404: OpenApiResponse(response=ResponseSerializer,
+                                 description="User not found!")
+        }
+        # more customizations
+    )
     def update(self, request, id=None, username=None):
-        pass
+        try:
+            if id is None:
+                user = User.objects.get(username=username)
+            else:
+                user = User.objects.get(id=id)
+            data = request.data
+            serializer = UserSerializer(instance=user, data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Updated successfuly'}, status=status.HTTP_200_OK)
+            message = ""
+            for key, value in serializer.errors.items():
+                message += value[0]
+                break
+            return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'message': f'User not found'},status=status.HTTP_404_NOT_FOUND)
+        return Response({'message': 'Error when updating'}, status=status.HTTP_400_BAD_REQUEST)
     
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(response=SuccessResponseSerializer,
+                                 description="Operations successfully"),
+            404: OpenApiResponse(response=ResponseSerializer,
+                                 description="User not found!")
+        }
+        # more customizations
+    )
     def delete(self, request, id=None, username=None):
-        pass
+        try:
+            if id is None:
+                user = User.objects.get(username=username)
+            else:
+                user = User.objects.get(id=id)
+            user.delete()
+        except User.DoesNotExist:
+            return Response({'message': f'User not found'},status=status.HTTP_404_NOT_FOUND)
+        return Response({'message': 'Deleted user successfully!'}, status=status.HTTP_200_OK)
     
