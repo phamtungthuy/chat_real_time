@@ -1,6 +1,7 @@
 version: '3.8'
 services:
   backend:
+    image: chat_real_time:backend
     build:
       context: .
       dockerfile: Dockerfile

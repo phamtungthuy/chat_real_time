@@ -8,6 +8,9 @@ class Message(models.Model):
     reply = models.ForeignKey("Message", null=True, on_delete=models.DO_NOTHING)
     create_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.content
+
 class Emoji(models.Model):
     code = models.CharField(max_length=10)
     url = models.CharField(max_length=50)

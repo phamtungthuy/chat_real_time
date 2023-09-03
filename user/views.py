@@ -2,10 +2,11 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse, inline_serializer
 from drf_spectacular.types import OpenApiTypes
-from .serializers import UserSerializer
+from .serializer import UserSerializer
 from django.contrib.auth.models import User
 from .response import ResponseSerializer, SuccessResponseSerializer
 
+@extend_schema(tags=['User'])
 class UserViewSet(viewsets.ModelViewSet):    
     @extend_schema(
         responses={
