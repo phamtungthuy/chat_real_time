@@ -1,17 +1,17 @@
 from rest_framework.serializers import ModelSerializer
 from .models import Message, Emoji, Reaction
 
-class MessageSeriazlier(ModelSerializer):
+class MessageSerializer(ModelSerializer):
     class Meta:
-        models = Message
+        model = Message
         fields = '__all__'
 
 class EmojiSerializer(ModelSerializer):
     class Meta:
-        models = Emoji
+        model = Emoji
         fields = '__all__'
 
 class ReactionSerializer(ModelSerializer):
     class Meta:
-        models = Reaction
+        model = Reaction
         fields = '__all__'

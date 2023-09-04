@@ -1,12 +1,12 @@
 from rest_framework.serializers import ModelSerializer
 from .models import Channel, Memeber
 
-class ChannelSeriazlier(ModelSerializer):
+class ChannelSerializer(ModelSerializer):
     class Meta:
-        models = Channel
+        model = Channel
         fields = '__all__'
 
 class MemberSerializer(ModelSerializer):
     class Meta:
-        models = Member
+        model = Member
         fields = '__all__'

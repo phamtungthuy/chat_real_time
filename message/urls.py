@@ -1,8 +1,15 @@
 from django.urls import path
-from message import views
+from .views import MessageViewSet
 
 urlpatterns = [
-    path('create/', views.createMessage),
-    path('getAll/', views.getAllMessages),
-    path('delete/<int:messageId>', views.deleteMessage)
+    path('all/<int:channelId>/', MessageViewSet.as_view({
+        'get': 'getMessageList'
+    })),
+    path('', MessageViewSet.as_view({
+        'post': 'createMessage',
+    })),
+    path('<int:messageId>/', MessageViewSet.as_view({
+        'put': 'editMessage',
+        'delete': 'deleteMessage',
+    })),
 ]
