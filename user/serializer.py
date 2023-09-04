@@ -17,7 +17,6 @@ class UserSerializer(serializers.ModelSerializer):
             return data
         if any(field not in data for field in ['username', 'email', 'password']):
             raise serializers.ValidationError('Username, email and password must be provided')
-        
         return data
 
     def validate_username(self, value):

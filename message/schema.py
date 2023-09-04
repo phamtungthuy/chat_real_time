@@ -18,7 +18,8 @@ createMessageSchema = extend_schema(
     request = MessageSerializer,
     responses = {
         200: OpenApiResponse(response=MessageSerializer,
-                             description="Create message successfully")
+                             description="Create message successfully"),
+        400: OpenApiResponse(description='Bad request')
     }
 )
 
@@ -27,12 +28,12 @@ editMessageSchema = extend_schema(
     request = inline_serializer(
         name = 'editMessageSchema',
         fields = {
-            'id': serializers.IntegerField(),
             'content': serializers.CharField()
         }
     ),
     responses = {
         200: OpenApiResponse(response=MessageSerializer, description="Edit message successfully"),
+        400: OpenApiResponse(description="Bad request"),
         404: OpenApiResponse(description="Message not found")
     }
 )
@@ -62,7 +63,8 @@ createReactionSchema = extend_schema(
     request = ReactionSerializer,
     responses = {
         200: OpenApiResponse(response=ReactionSerializer,
-                             description="Create reaction successfully")
+                             description="Create reaction successfully"),
+        400: OpenApiResponse(description='Bad request')
     }
 )
 
@@ -76,6 +78,7 @@ changeReactionSchema = extend_schema(
     ),
     responses = {
         200: OpenApiResponse(response=ReactionSerializer, description="Edit message successfully"),
+        400: OpenApiResponse(description='Bad request'),
         404: OpenApiResponse(description="Message not found")
     }
 )
@@ -93,5 +96,7 @@ removeReactionSchema = extend_schema(
 
 getEmojiListSchema = extend_schema(
     summary = 'Get emoji list',
-    responses = OpenApiResponse(response=EmojiSerializer, description='Get emoji list successfully')
+    responses =  {
+        200: OpenApiResponse(response=EmojiSerializer(many=True), description='Get emoji list successfully')
+    }
 )

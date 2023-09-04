@@ -5,7 +5,7 @@ from .models import Message, Emoji, Reaction
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'member', 'channel', 'content']
 
 @admin.register(Emoji)
 class EmojiAdmin(admin.ModelAdmin):

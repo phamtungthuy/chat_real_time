@@ -8,6 +8,9 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('admin/', admin.site.urls),
+
+    path('chat/', include('chat.urls')),
+
     path('api/channel/', include('channel.urls')),
     path('api/message/', include('message.urls')),
     path('api/', include('user.urls')),

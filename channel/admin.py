@@ -3,8 +3,8 @@ from .models import Channel, Member
 
 @admin.register(Channel)
 class ChannelAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'title']
 
 @admin.register(Member)
 class MemberAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'user', 'channel']

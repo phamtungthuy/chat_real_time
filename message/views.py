@@ -17,8 +17,8 @@ class MessageViewSet(viewsets.ModelViewSet):
     @getMessageListSchema
     def getMessageList(self, request, channelId):
         try:
-            messageList = queryset.filter(channel=channelId)
-            serializer = serializer_class(messageList, many=True)
+            messageList = self.queryset.filter(channel=channelId)
+            serializer = self.serializer_class(messageList, many=True)
             return Response({'message': 'Get message list successfully', 'data': serializer.data})
         except:
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -27,28 +27,38 @@ class MessageViewSet(viewsets.ModelViewSet):
     @createMessageSchema
     def createMessage(self, request):
         data = request.data
-        serializer = serializer_class(data=data)
-        serializer.save()
-        return Response({'message': 'Create message successfully', 'data': serializer.data})
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Create message successfully', 'data': serializer.data})
+        else:
+            message = ''
+            for key, value in serializer.errors.items():
+                message += f'{value[0]} ({key})'
+                break
+            return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
 
     @editMessageSchema
     def editMessage(self, request, messageId):
-        content = request.data.get('content')
         try:
-            message = queryset.get(pk=messageId)
-            message.content = content
-            message.save()
-            serializer = serializer_class(message, many=False)
-            return Response({'message': 'Edit message successfully', 'data': serializer.data})
+            message = self.queryset.get(pk=messageId)
         except:
             return Response({'message': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            message.content = request.data.get('content')
+            message.save()
+            serializer = self.serializer_class(message, many=False)
+            return Response({'message': 'Edit message successfully', 'data': serializer.data})
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
     @deleteMessageSchema
     def deleteMessage(self, request, messageId):
         try:
-            message = queryset.get(pk=messageId)
+            message = self.queryset.get(pk=messageId)
             message.delete()
             Response({'message': 'Delete message successfully'})
         except:
@@ -65,16 +75,23 @@ class ReactionViewSet(viewsets.ModelViewSet):
     @createReactionSchema
     def createReaction(self, request):
         data = request.data
-        serializer = serializer_class(data=data)
-        serializer.save()
-        return Response({'message': 'Create reaction successfully', 'data': serializer.data})
+        serializer = self.serializer_class(data=data)
+        if (serializer.is_valid(raise_exception=True)):
+            serializer.save()
+            return Response({'message': 'Create reaction successfully', 'data': serializer.data})
+        else:
+            message = ''
+            for key, value in serializer.errors.items():
+                message += f'{value[0]} ({key})'
+                break
+            return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
 
     @getReactionListSchema
     def getReactionList(self, request, messageId):
         try:
-            reactionList = queryset.filter(message=messageId)
-            serializer = serializer_class(reactionList, many=True)
+            reactionList = self.queryset.filter(message=messageId)
+            serializer = self.serializer_class(reactionList, many=True)
             return Response({'message': 'Get reaction list successfully', 'data': serializer.data})
         except:
             return Response({'message': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -83,19 +100,23 @@ class ReactionViewSet(viewsets.ModelViewSet):
     @changeReactionSchema
     def changeReaction(self, request, reactionId):
         try:
-            reaction = queryset.get(pk=reactionId)
-            reaction.emoji = request.data.get('emoji')
-            reaction.save()
-            serializer = ReactionSerializer(reaction, many=False)
-            return Response({'message': 'Change reaction successfully', 'data': serializer.data})
+            reaction = self.queryset.get(pk=reactionId)
         except:
             return Response({'message': 'Reaction not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            reaction.emoji = request.data.get('emoji')
+            reaction.save()
+            serializer = self.serializer_class(reaction, many=False)
+            return Response({'message': 'Change reaction successfully', 'data': serializer.data})
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
     @removeReactionSchema
     def removeReaction(self, request, reactionId):
         try:
-            reaction = queryset.get(pk=reactionId)
+            reaction = self.queryset.get(pk=reactionId)
             reaction.delete()
             Response({'message': 'Remove reaction successfully'})
         except:
