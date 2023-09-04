@@ -18,8 +18,8 @@ class Channel(models.Model):
 class Member(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
-    nickname = models.CharField(default=str(user), max_length=30)
+    nickname = models.CharField(blank=True, null=True, max_length=30)
     role = models.CharField(max_length=10, default="MEMBER", choices=ROLES)
 
     def __str__(self):
-        return self.nickname + " " + str(channel)
+        return self.nickname + " - " + str(self.channel)

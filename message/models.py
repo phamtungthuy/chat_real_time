@@ -12,11 +12,16 @@ class Message(models.Model):
         return self.content
 
 class Emoji(models.Model):
+    name = models.CharField(max_length=20)
     code = models.CharField(max_length=10)
     url = models.CharField(max_length=50)
 
 class Reaction(models.Model):
+    member = models.ForeignKey(Member, on_delete=models.CASCADE)
     message = models.ForeignKey(Message, on_delete=models.CASCADE)
     emoji = models.OneToOneField(Emoji, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.member)
 
 
