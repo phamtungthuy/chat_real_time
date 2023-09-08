@@ -9,6 +9,7 @@
     <textarea id="chat-log" cols="100" rows="20"></textarea><br>
     <input id="chat-message-input" type="text" size="100"><br>
     <input id="chat-message-submit" type="button" value="Send">
+    <input id='react-btn' type='button' value='React'>
     {{ room_name|json_script:"room-name" }}
     <script>
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
@@ -22,8 +23,18 @@
         );
 
         chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            document.querySelector('#chat-log').value += (data.content + '\n');
+            const text_data_json = JSON.parse(e.data);
+            const data_type = text_data_json.data_type
+            const action = text_data_json.action
+            const data = text_data_json.data
+            switch (data_type) {
+                case 'message':
+                    document.querySelector('#chat-log').value += (data.content + '    ' + data.create_at + '\n');
+                    break;
+                case 'reaction':
+                    document.querySelector('#chat-log').value += ('<3\n');
+                    break;
+            }
         };
 
         chatSocket.onclose = function(e) {
@@ -40,11 +51,32 @@
         document.querySelector('#chat-message-submit').onclick = function(e) {
             const messageInputDom = document.querySelector('#chat-message-input');
             const message = messageInputDom.value;
+            if (message == '') {
+                return
+            }
             chatSocket.send(JSON.stringify({
-                'content': message
+                'data_type': 'message',
+                'action': 'create',
+                'data': {
+                    'member': 3,
+                    'channel': 2,
+                    'content': message
+                }
             }));
             messageInputDom.value = '';
         };
+
+        document.querySelector('#react-btn').onclick = function (e) {
+            chatSocket.send(JSON.stringify({
+                'data_type': 'reaction',
+                'action': 'create',
+                'data': {
+                    'member': 3,
+                    'message': 12,
+                    'emoji': 1
+                }
+            }));
+        }
     </script>
 </body>
 </html>

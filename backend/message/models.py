@@ -19,7 +19,7 @@ class Emoji(models.Model):
 class Reaction(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
     message = models.ForeignKey(Message, on_delete=models.CASCADE)
-    emoji = models.OneToOneField(Emoji, on_delete=models.CASCADE)
+    emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE)
 
     def __str__(self):
         return str(self.member)

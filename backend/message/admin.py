@@ -9,8 +9,9 @@ class MessageAdmin(admin.ModelAdmin):
 
 @admin.register(Emoji)
 class EmojiAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'name']
 
 @admin.register(Reaction)
 class ReactionAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'member', 'message']
+
