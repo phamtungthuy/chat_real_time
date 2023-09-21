@@ -17,7 +17,7 @@ class Channel(models.Model):
 
 class Member(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
+    channel = models.ForeignKey(Channel, related_name='members', on_delete=models.CASCADE)
     nickname = models.CharField(blank=True, null=True, max_length=30)
     role = models.CharField(max_length=10, default="MEMBER", choices=ROLES)
 
