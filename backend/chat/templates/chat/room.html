@@ -24,14 +24,13 @@
 
         chatSocket.onmessage = function(e) {
             const text_data_json = JSON.parse(e.data);
-            const data_type = text_data_json.data_type
             const action = text_data_json.action
             const data = text_data_json.data
-            switch (data_type) {
-                case 'message':
+            switch (action) {
+                case 'create_message':
                     document.querySelector('#chat-log').value += (data.content + '    ' + data.create_at + '\n');
                     break;
-                case 'reaction':
+                case 'create_reaction':
                     document.querySelector('#chat-log').value += ('<3\n');
                     break;
             }
@@ -55,8 +54,7 @@
                 return
             }
             chatSocket.send(JSON.stringify({
-                'data_type': 'message',
-                'action': 'create',
+                'action': 'create_message',
                 'data': {
                     'member': 3,
                     'channel': 2,
@@ -68,8 +66,7 @@
 
         document.querySelector('#react-btn').onclick = function (e) {
             chatSocket.send(JSON.stringify({
-                'data_type': 'reaction',
-                'action': 'create',
+                'action': 'create_reaction',
                 'data': {
                     'member': 3,
                     'message': 12,

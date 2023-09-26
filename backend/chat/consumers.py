@@ -1,25 +1,43 @@
 import json
 from .async_db import *   
 from channels.generic.websocket import AsyncWebsocketConsumer
+from user.models import UserProfile
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    @database_sync_to_async
+    def onlineUser(self, user):
+        userProfile = UserProfile.objects.get(user=user)
+        userProfile.online = True
+        userProfile.save()
+
+    @database_sync_to_async
+    def offlineUser(self, user):
+        userProfile = UserProfile.objects.get(user=user)
+        userProfile.online = False
+        userProfile.save()
+
+
     async def connect(self):
-        self.groupId = self.scope["url_route"]["kwargs"]["groupId"]
-        self.groupName = f'group_{self.groupId}'
-        # Join group
-        await self.channel_layer.group_add(self.groupName, self.channel_name)
+        # Change online status
+        # self.user = self.scope['user']
+        # await self.onlineUser(self.user)
+
+        # Join chat room
+        self.chatRoomId = self.scope["url_route"]["kwargs"]["chatRoomId"]
+        await self.channel_layer.group_add(self.chatRoomId, self.channel_name)
         await self.accept()
 
 
     async def disconnect(self, close_code):
-        # Leave room group
-        await self.channel_layer.group_discard(self.groupName, self.channel_name)
+        # Change offline status
+        # await self.offlineUser(self.user)
 
+        # Leave room group
+        await self.channel_layer.group_discard(self.chatRoomId, self.channel_name)
 
 
     # text_json_data = {
-    #     "data_type": DATA_TYPE,
     #     "action": ACTION,
     #     "data": {
     #         "member": member,
@@ -36,31 +54,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
             text_data_json['data'] = serializerData
             # Send message to group
             await self.channel_layer.group_send(
-                self.groupName, {"type": "chat.send", "text_data_json": text_data_json}
+                self.chatRoomId, {"type": "chat.send", "text_data_json": text_data_json}
             )
         except Exception as e:
             print(e)
         
 
     async def dbAsyncHandle(self, text_data_json):
-        data_type = text_data_json.get('data_type')
         action = text_data_json.get('action')
         data = text_data_json.get('data')
 
-        if data_type == DATA_TYPE.MESSAGE:
-            if action == ACTION.CREATE:
-                return await createMessage(data)
-            if action == ACTION.UPDATE:
-                return await updateMessage(data)
-            if action == ACTION.DELETE:
-                return await deleteMessage(data)
-        if data_type == DATA_TYPE.REACTION:
-            if action == ACTION.CREATE:
-                return await createReaction(data)
-            if action == ACTION.UPDATE:
-                return await updateReaction(data)
-            if action == ACTION.DELETE:
-                return await deleteReation(data)
+        if action == ACTION.CREATE_MESSAGE:
+            return await createMessage(data)
+        if action == ACTION.DELETE_MESSAGE:
+            return await deleteMessage(data)
+        if action == ACTION.CREATE_REACTION:
+            return await createReaction(data)
+        if action == ACTION.DELETE_REACTION:
+            return await deleteReation(data)
 
 
     # Receive message from group

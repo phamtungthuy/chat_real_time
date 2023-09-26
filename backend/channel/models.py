@@ -22,4 +22,4 @@ class Member(models.Model):
     role = models.CharField(max_length=10, default="MEMBER", choices=ROLES)
 
     def __str__(self):
-        return self.nickname + " - " + str(self.channel)
+        return str(self.user) + " - " + str(self.channel)

@@ -2,14 +2,12 @@ from message.models import Message, Reaction
 from message.serializer import MessageSerializer, ReactionSerializer
 from channels.db import database_sync_to_async
     
-class DATA_TYPE:
-    MESSAGE = 'message'
-    REACTION = 'reaction'
 
 class ACTION:
-    CREATE = 'create'
-    UPDATE = 'update'
-    DELETE = 'delete'
+    CREATE_MESSAGE = 'create_message'
+    DELETE_MESSAGE = 'delete_message'
+    CREATE_REACTION = 'create_reaction'
+    DELETE_REACTION = 'delete_reaction'
 
 
 @database_sync_to_async
@@ -25,7 +23,7 @@ def deleteMessage(data):
     messageId = data.get('messageId')
     message = Message.objects.get(pk=messageId)
     message.delete()
-    return messageId
+    return {'message': messageId}
 
 
 @database_sync_to_async
@@ -41,4 +39,4 @@ def deleteReaction(data):
     reactionId = data.get('reactionId')
     reaction = Reaction.objects.get(pk=reactionId)
     reaction.delete()
-    return reactionId
+    return {'reaction': reactionId}
