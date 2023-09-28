@@ -18,12 +18,11 @@ class ChannelViewSet(viewsets.ModelViewSet):
         title = data.get('title')
         creator = data.get('creator')
         members = data.get('members')
-        memberCount = len(members)
         try:
-            channel = self.queryset.create(title=title, memberCount=memberCount)
+            channel = self.queryset.create(title=title)
             Member.objects.create(user_id=creator, channel=channel, role="CREATOR")
             for user in members:
-                Member.objects.create(user_id=user, channel=channel, role="MEMBER")
+                Member.objects.create(user_id=user, channel=channel)
             serializer = self.serializer_class(channel, many=False)
             return Response({'message': 'Create channel successfully', 'data': serializer.data})
         except Exception as e:
@@ -59,7 +58,6 @@ class MemberViewSet(viewsets.ModelViewSet):
         try:
             member = self.queryset.get(pk=memberId)
             channel = Channel.objects.get(pk=member.channel.id)
-            channel.memberCount = channel.memberCount - 1
             channel.save()
             member.delete()
             return Response({'message': 'Delete member successfully'})

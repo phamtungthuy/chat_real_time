@@ -9,7 +9,6 @@ ROLES = (
 
 class Channel(models.Model):
     title = models.CharField(max_length=30)
-    memberCount = models.IntegerField(default=0)
     create_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
