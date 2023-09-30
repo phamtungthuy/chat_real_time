@@ -1,9 +1,18 @@
 from django.urls import path
-from channel import views
+from .views import ChannelViewSet, MemberViewSet
 
 urlpatterns = [
-    path('create/', views.createChannel),
-    path('getAll/', views.getAllChannels),
-    path('update/', views.updateChannel),
-    path('delete/<int:channelId>', views.deleteChannel)
+    path('', ChannelViewSet.as_view({
+        'post': 'createChannel',
+        'get': 'getUserChannels'
+    })),
+    path('<int:channelId>/', ChannelViewSet.as_view({
+        'delete': 'deleteChannel',
+    })),
+    path('<int:channelId>/members', ChannelViewSet.as_view({
+        'get': 'getMemberList',
+    })),
+    path('member/<int:memberId>/', MemberViewSet.as_view({
+        'delete': 'deleteMember',
+    }))
 ]
