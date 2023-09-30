@@ -1,5 +1,5 @@
 from django.contrib.auth.models import AnonymousUser, User
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import Token
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
 from channels.auth import AuthMiddlewareStack
@@ -27,7 +27,7 @@ class JwtAuthMiddleware(BaseMiddleware):
             decoded_token = decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         except (ValueError, DecodeError, ExpiredSignatureError) as e:
             token = None
-            print(e)
+            # print(e)
         scope['user'] = AnonymousUser() if token is None else await get_user(decoded_token)
         return await super().__call__(scope, receive, send)
 

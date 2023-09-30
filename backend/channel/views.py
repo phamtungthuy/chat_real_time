@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 
 class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = ChannelSerializer
 
     def createChannel(self, request):
@@ -28,6 +28,14 @@ class ChannelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         
+
+    def getUserChannels(self, request):
+        user = request.user
+        members = user.members.all()
+        channels = [member.channel for member in members]
+        serializer = self.serializer_class(channels, many=True)
+        return Response({'message': 'Get channel list successfully', 'data': serializer.data})
+
 
     def getMemberList(self, request, channelId):
         try:

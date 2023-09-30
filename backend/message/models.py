@@ -6,7 +6,7 @@ class Message(models.Model):
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
     content = models.TextField()
     reply = models.ForeignKey("Message", null=True, on_delete=models.DO_NOTHING)
-    create_at = models.DateTimeField(auto_now=True)
+    create_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.content

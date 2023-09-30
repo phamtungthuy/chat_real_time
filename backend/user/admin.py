@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserProfile, Friend
+from .models import UserProfile, Friend, Notification
 from django.contrib.auth.models import User
 
 admin.site.unregister(User)
@@ -14,4 +14,8 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Friend)
 class FriendAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
     pass

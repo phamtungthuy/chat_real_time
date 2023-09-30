@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from .models import UserProfile, Friend, Notification
 from drf_spectacular.utils import extend_schema_serializer
 from django.core.validators import RegexValidator
 from django.contrib.auth.hashers import make_password, check_password
-import re
+
 class UserSerializer(serializers.ModelSerializer):
     username=serializers.CharField(required=False)
     password=serializers.CharField(required=False)
@@ -44,3 +45,18 @@ class UserSerializer(serializers.ModelSerializer):
             'username': data['username'],
             'email': data['email']
         }
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = '__all__'
+
+class FriendSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Friend
+        fields = '__all__'
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'

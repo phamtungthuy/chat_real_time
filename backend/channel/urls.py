@@ -4,6 +4,7 @@ from .views import ChannelViewSet, MemberViewSet
 urlpatterns = [
     path('', ChannelViewSet.as_view({
         'post': 'createChannel',
+        'get': 'getUserChannels'
     })),
     path('<int:channelId>/', ChannelViewSet.as_view({
         'delete': 'deleteChannel',
