@@ -8,7 +8,7 @@ MESSAGE_TYPE = (
 
 class Message(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
-    channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
+    channel = models.ForeignKey(Channel, related_name='messages', on_delete=models.CASCADE)
     message_type = models.CharField(max_length=10, choices=MESSAGE_TYPE, default="TEXT")
     content = models.TextField()
     reply = models.ForeignKey("Message", null=True, on_delete=models.DO_NOTHING)

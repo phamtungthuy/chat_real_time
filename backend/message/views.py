@@ -9,7 +9,6 @@ from .schema import *
 from drf_spectacular.utils import extend_schema
 from storages.backends.s3boto3 import S3Boto3Storage
 import uuid
-from sys import getsizeof
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
@@ -43,16 +42,15 @@ class MessageViewSet(viewsets.ModelViewSet):
                 break
             return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
-    def uploadImageMessage(self, request):
+    def uploadImage(self, request):
         file_obj = request.FILES.get('file')
         # Validate file
-        print(file_obj)
         if file_obj is None:
             return Response({"message": "File not provided"}, status=status.HTTP_400_BAD_REQUEST) 
         file_type = file_obj.content_type.split('/')[0]
         if file_type != 'image':
             return Response({"message": "File type not supported"}, status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-        elif getsizeof(file_obj) >= 10000:
+        elif file_obj.size >= 10**7:
             return Response({"message": "File size is too large"}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
         # Upload file to s3
         data = request.data
@@ -61,14 +59,13 @@ class MessageViewSet(viewsets.ModelViewSet):
             channel = Channel.objects.get(pk=channelId)
         except Channel.DoesNotExist:
             return Response({"message": "Channel not found"}, status=status.HTTP_404_NOT_FOUND)
-        file_path = f'upload/channel/{channelId}_{channel.title}/{uuid.uuid4()}'
+        file_path = f'upload/channel/{channel}/{uuid.uuid4()}'
         s3 = S3Boto3Storage()
         s3.save(file_path, file_obj)
         file_url = s3.url(file_path)
         # Save to db as message
         data['message_type'] = "IMAGE"
         data['content'] = file_url
-        print(data)
         try:
             serializer = self.serializer_class(data=data)
             if serializer.is_valid(raise_exception=True):

@@ -6,8 +6,8 @@ urlpatterns = [
     path('all/<int:channelId>/', MessageViewSet.as_view({
         'get': 'getMessageList',
     })),
-    path('upload/', MessageViewSet.as_view({
-        'post': 'uploadImageMessage',
+    path('upload/image/', MessageViewSet.as_view({
+        'post': 'uploadImage',
     })),
     path('<int:messageId>/', MessageViewSet.as_view({
         'put': 'editMessage',

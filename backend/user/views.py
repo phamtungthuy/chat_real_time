@@ -4,8 +4,15 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExampl
 from drf_spectacular.types import OpenApiTypes
 from .serializer import UserSerializer
 from django.contrib.auth.models import User
+from user.models import UserProfile
+from channel.serializer import ChannelSerializer
 from .response import ResponseSerializer, SuccessResponseSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from storages.backends.s3boto3 import S3Boto3Storage
+import uuid
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+import json
 
 @extend_schema(tags=['User'])
 class UserViewSet(viewsets.ModelViewSet):
@@ -131,3 +138,37 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'message': f'User not found'},status=status.HTTP_404_NOT_FOUND)
         return Response({'message': 'Deleted user successfully!'}, status=status.HTTP_200_OK)
     
+    def uploadUserAvatar(self, request):
+        file_obj = request.FILES.get('file')
+        # Validate file
+        if file_obj is None:
+            return Response({"message": "File not provided"}, status=status.HTTP_400_BAD_REQUEST) 
+        file_type = file_obj.content_type.split('/')[0]
+        if file_type != 'image':
+            return Response({"message": "File type not supported"}, status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+        elif file_obj.size > 10**7:
+            return Response({"message": "File size is too large"}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+        # Upload file to s3
+        user = request.user
+        userProfile = UserProfile.objects.get(user=user)
+        file_path = f'upload/user/{user.id}_{user.username}/avatar/{uuid.uuid4()}'
+        s3 = S3Boto3Storage()
+        s3.save(file_path, file_obj)
+        file_url = s3.url(file_path)
+        # Save to db as message
+        try:
+            userProfile.avatar_url = file_url
+            userProfile.save()
+            data = {
+                "avatar_url": file_url
+            }
+            return Response({"message": "Update user avatar successfully", "data": data})
+        except Exception as e:
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def getUserChannels(self, request):
+        user = request.user
+        members = user.members.all()
+        channels = [member.channel for member in members]
+        serializer = ChannelSerializer(channels, many=True)
+        return Response({'message': 'Get channel list successfully', 'data': serializer.data})

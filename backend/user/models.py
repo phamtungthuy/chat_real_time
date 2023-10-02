@@ -8,6 +8,7 @@ NOTIFICATION_TYPE = (
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    avatar_url = models.CharField(null=True, max_length=128)
     fullname = models.CharField(max_length=30)
     phone_number = models.CharField(max_length=15)
     address = models.CharField(null=True, max_length=100)
