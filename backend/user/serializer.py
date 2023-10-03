@@ -52,6 +52,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class FriendSerializer(serializers.ModelSerializer):
+    friend_with = serializers.SerializerMethodField()
+
+    def get_friend_with(self, obj):
+        friendProfile = UserProfile.objects.get(user=obj.friend_with)
+        friendProfileSerializer = UserProfileSerializer(friendProfile, many=False)
+        friendSerializer = UserSerializer(obj.friend_with, many=False)
+        return friendSerializer.get() | friendProfileSerializer.data
+    
     class Meta:
         model = Friend
         fields = '__all__'

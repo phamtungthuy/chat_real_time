@@ -2,13 +2,14 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse, inline_serializer
 from drf_spectacular.types import OpenApiTypes
-from .serializer import UserSerializer
+from .serializer import UserSerializer, FriendSerializer
 from django.contrib.auth.models import User
-from user.models import UserProfile
+from user.models import UserProfile, Friend
 from channel.serializer import ChannelSerializer
 from .response import ResponseSerializer, SuccessResponseSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from storages.backends.s3boto3 import S3Boto3Storage
+from django.db.models import Q
 import uuid
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -166,9 +167,29 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    def getUserChannels(self, request):
+    def getChannelList(self, request):
         user = request.user
         members = user.members.all()
         channels = [member.channel for member in members]
         serializer = ChannelSerializer(channels, many=True)
         return Response({'message': 'Get channel list successfully', 'data': serializer.data})
+
+class FriendViewSet(viewsets.ViewSet):
+    query_set = Friend.objects.all()
+    serializer_class = FriendSerializer
+    permission_classes = [IsAuthenticated]
+
+    def getFriendList(self, request):
+        user = request.user
+        friendList = user.friends.all()
+        serializer = self.serializer_class(friendList, many=True)
+        return Response({'message': 'Get friend list successfully', 'data': serializer.data})
+
+    def deleteFriend(self, request, friendId):
+        user = request.user
+        try:
+            friend = Friend.objects.filter(Q(user=user, friend_with=friendId) | Q(user_id=friendId, friend_with=user))
+            friend.delete()
+            return Response({'message': 'Delete friend successfully'})
+        except Friend.DoesNotExist:
+            return Response({"message": "Friend not found"}, status=status.HTTP_404_NOT_FOUND)

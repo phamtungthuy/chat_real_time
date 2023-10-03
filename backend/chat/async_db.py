@@ -249,6 +249,7 @@ text_json_data = {
 def friendAccept(user, data):
     friend_with = data.get('user')
     Friend.objects.create(user=user, friend_with_id=friend_with)
+    Friend.objects.create(user_id=friend_with, friend_with=user)
     data.update({
         "sender": user.id,
         "notification_type": "FRIEND_ACCEPT"
