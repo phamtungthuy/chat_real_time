@@ -91,12 +91,18 @@ class ChannelViewSet(viewsets.ModelViewSet):
         try:
             channel.avatar_url = file_url
             channel.save()
+            text_data_json = {
+                "action": "upload_channel_avatar",
+                "target": "channel",
+                "targetId": channelId,
+                "data": data['avatar_url']
+            }
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(f'group_{channelId}', {
                 "type": "chat.send",
-                "text_data_json": json.dumps(data)
+                "text_data_json": text_data_json
             })
-            return Response({"message": "Update channel avatar successfully"})
+            return Response({"message": "Update channel avatar successfully", "data": data})
         except Exception as e:
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
             

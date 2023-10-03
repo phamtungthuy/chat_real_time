@@ -11,6 +11,7 @@ from storages.backends.s3boto3 import S3Boto3Storage
 import uuid
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+import json
 
 
 @extend_schema(tags=['Message'])
@@ -43,39 +44,50 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
     def uploadImage(self, request):
-        file_obj = request.FILES.get('file')
-        # Validate file
-        if file_obj is None:
-            return Response({"message": "File not provided"}, status=status.HTTP_400_BAD_REQUEST) 
-        file_type = file_obj.content_type.split('/')[0]
-        if file_type != 'image':
-            return Response({"message": "File type not supported"}, status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-        elif file_obj.size >= 10**7:
-            return Response({"message": "File size is too large"}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
-        # Upload file to s3
+        file_list = request.FILES.getlist('file')
+        # Check whether file is empty
+        if file_list is None or len(file_list) == 0:
+            return Response({"message": "File not provided"}, status=status.HTTP_400_BAD_REQUEST)
+        for file_obj in file_list:
+            # Check type and size
+            file_type = file_obj.content_type.split('/')[0]
+            if file_type != 'image':
+                return Response({"message": "File type not supported"}, status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+            elif file_obj.size >= 10**7:
+                return Response({"message": "File size is too large"}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+        # Get channel
         data = request.data
         channelId = data.get('channel')
         try: 
             channel = Channel.objects.get(pk=channelId)
         except Channel.DoesNotExist:
             return Response({"message": "Channel not found"}, status=status.HTTP_404_NOT_FOUND)
-        file_path = f'upload/channel/{channel}/{uuid.uuid4()}'
+        # Upload file to s3
         s3 = S3Boto3Storage()
-        s3.save(file_path, file_obj)
-        file_url = s3.url(file_path)
+        data['content'] = ''
+        for file_obj in file_list:
+            file_path = f'upload/channel/{channel}/{uuid.uuid4()}'
+            s3.save(file_path, file_obj)
+            file_url = s3.url(file_path)
+            data['content'] += file_url + ' '
         # Save to db as message
-        data['message_type'] = "IMAGE"
-        data['content'] = file_url
+        data['message_type'] = "IMAGE" 
         try:
             serializer = self.serializer_class(data=data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
+                text_data_json = {
+                    "action": "upload_image",
+                    "target": "channel",
+                    "targetId": channelId,
+                    "data": serializer.data
+                }
                 channel_layer = get_channel_layer()
                 async_to_sync(channel_layer.group_send)(f'group_{channelId}', {
                     "type": "chat.send",
-                    "text_data_json": serializer.data
+                    "text_data_json": text_data_json
                 })
-                return Response({"message": "Upload file successfully"})
+                return Response({"message": "Upload file successfully", "data": serializer.data})
         except Exception as e:
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
