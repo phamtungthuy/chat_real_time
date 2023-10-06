@@ -15,6 +15,11 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import json
 
+from django.core import mail
+import random
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 @extend_schema(tags=['User'])
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
@@ -71,17 +76,51 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = UserSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({
-                'message': 'Account created successfully',
-                'data': serializer.get()
-                },status=status.HTTP_200_OK)
+            user = serializer.save()
+            # Generate four number verification code
+            verification_code = str(random.randint(0, 9999))
+            while len(verification_code) < 4:
+                verification_code = "0" + verification_code
+            # Create user profile ref to User
+            userProfile = UserProfile.objects.create(user=user, verification_code=verification_code)
+            # Send verification code via user email
+            html_message = render_to_string('email_form.html', {'verification_code': verification_code})
+            plain_message = f"Mã xác thực của bạn: {verification_code}"
+            mail.send_mail(
+                subject="Verification code",
+                from_email='Schat <schatemail.system@gmail.com>',
+                message=plain_message,
+                recipient_list=[user.email],
+                html_message=html_message
+            )
+            return Response({"message": "Verification code was sent", "data": serializer.get()})
+            # return Response({
+            #     'message': 'Account created successfully',
+            #     'data': serializer.get()
+            #     },status=status.HTTP_200_OK)
         message = ""
         for key, value in serializer.errors.items():
             message += value[0]
             break
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     
+
+    def verifyEmail(self, request):
+        userId = request.data.get('userId')
+        verification_code = request.data.get('verification_code')
+        try:
+            user = User.objects.get(pk=userId)
+            userProfile = UserProfile.objects.get(user=user)
+        except User.DoesNotExist:
+            return Response({'message': 'User not found'},status=status.HTTP_404_NOT_FOUND)
+        if userProfile.verification_code == verification_code:
+            userProfile.verified = True
+            userProfile.save()
+            return Response({"message": "Account has been verified successfully"})
+        else: 
+            return Response({"message": "Verification code not correct"})
+
+
     @extend_schema(
         request={
             "multipart/form-data": {

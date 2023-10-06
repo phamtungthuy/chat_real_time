@@ -42,6 +42,7 @@ class UserSerializer(serializers.ModelSerializer):
     def get(self):
         data = self.data
         return {
+            'id': data['id'],
             'username': data['username'],
             'email': data['email']
         }
