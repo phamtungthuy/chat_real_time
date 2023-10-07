@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserViewSet, FriendViewSet
+from .views import UserViewSet, UserProfileViewSet, FriendViewSet
 
 urlpatterns = [
     path('signup/', UserViewSet.as_view({
@@ -20,16 +20,22 @@ urlpatterns = [
     path('upload/avatar/', UserViewSet.as_view({
         'post': 'uploadUserAvatar',
     })),
-    # path('<int:id>/user/', UserViewSet.as_view({
-    #     'get': 'retrieve',
-    #     'put': 'update',
-    #     'delete': 'delete'
-    # })),
     path('user/<str:username>/', UserViewSet.as_view({
         'get': 'retrieve',
         'put': 'update',
         'delete': 'delete'
     })),
+    # path('<int:id>/user/', UserViewSet.as_view({
+    #     'get': 'retrieve',
+    #     'put': 'update',
+    #     'delete': 'delete'
+    # })),
+    
+    # UserProflieViewSet
+    path('profile/<int:userId>/', UserProfileViewSet.as_view({
+        'get': 'getUserProfile',
+    })),
+
     # FriendViewSet
     path('friends/', FriendViewSet.as_view({
         'get': 'getFriendList',

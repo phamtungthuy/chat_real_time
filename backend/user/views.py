@@ -270,6 +270,31 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = ChannelSerializer(channels, many=True)
         return Response({'message': 'Get channel list successfully', 'data': serializer.data})
 
+
+class UserProfileViewSet(viewsets.ViewSet):
+    query_set = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def getUserProfile(self, request, userId):
+        try:
+            user = request.user
+            userProfile = self.query_set.get(user_id=userId)
+            serializers = self.serializer_class(userProfile, many=False)
+            isSelf = (user.id == userId)
+            # If user get self profile, return full info
+            if isSelf:
+                return Response({"message": "Get user profile successfully", "data": serializers.data})
+            # If user get friend profile, return friend info
+            isFriend = Friend.objects.filter(Q(user=user, friend_with=userId) | Q(user_id=friendId, friend_with=user)).exists()
+            if isFriend:
+                return Response({"message": "Get user profile successfully", "data": serializers.friendProfile()})
+            else: # If not friend return public info
+                return Response({"message": "Get user profile successfully", "data": serializers.strangerProfile()})
+        except UserProfile.DoesNotExist:
+            return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
 class FriendViewSet(viewsets.ViewSet):
     query_set = Friend.objects.all()
     serializer_class = FriendSerializer

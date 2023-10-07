@@ -65,10 +65,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
         data.pop('user', None)
         data.pop('verified', None)
         data.pop('verification_code', None)
-        # Private info
-        data.pop("fullname")
+        return data
+        
+    def friendProflie(self):
         data.pop("address")
         return data
+
+    def strangerProfile(self):
+        data = self.data
+        return {
+            'avatar_url': data['avatar_url'],
+            'fullname': data['fullname']
+        }
 
 
 class FriendSerializer(serializers.ModelSerializer):
