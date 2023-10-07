@@ -2,11 +2,17 @@ from django.urls import path
 from .views import UserViewSet, FriendViewSet
 
 urlpatterns = [
-    path('', UserViewSet.as_view({
-        'post': 'create',
+    path('signup/', UserViewSet.as_view({
+        'post': 'signup',
+    })),
+    path('login/', UserViewSet.as_view({
+        'post': 'login',
     })),
     path('verify/', UserViewSet.as_view({
         'post': 'verifyEmail',
+    })),
+    path('verify/resend/', UserViewSet.as_view({
+        'post': 'resendVerification',
     })),
     path('channels/', UserViewSet.as_view({
         'get': 'getChannelList',

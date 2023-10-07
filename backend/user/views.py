@@ -10,6 +10,7 @@ from .response import ResponseSerializer, SuccessResponseSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.db.models import Q
+from rest_framework_simplejwt.tokens import RefreshToken
 import uuid
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -42,8 +43,6 @@ class UserViewSet(viewsets.ModelViewSet):
         }
         # more customizations
     )
-
-
     def retrieve(self, request, id=None, username=None):
         try:
             if id is None:
@@ -71,15 +70,14 @@ class UserViewSet(viewsets.ModelViewSet):
             400: OpenApiResponse(response=ResponseSerializer, description='Bad Request')
         }
     )
-    
-    def create(self, request):
+    def signup(self, request):
         data = request.data
         serializer = UserSerializer(data=data)
         if serializer.is_valid():
             user = serializer.save()
-            # Generate four number verification code
-            verification_code = str(random.randint(0, 9999))
-            while len(verification_code) < 4:
+            # Generate six number verification code
+            verification_code = str(random.randint(0, 999999))
+            while len(verification_code) < 6:
                 verification_code = "0" + verification_code
             # Create user profile ref to User
             userProfile = UserProfile.objects.create(user=user, verification_code=verification_code)
@@ -105,18 +103,77 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     
 
-    def verifyEmail(self, request):
-        userId = request.data.get('userId')
-        verification_code = request.data.get('verification_code')
+    def resendVerification(self, request):
+        data = request.data
+        username = data.get('username')
+        email = data.get('email')
         try:
-            user = User.objects.get(pk=userId)
+            user = User.objects.get(username=username)
             userProfile = UserProfile.objects.get(user=user)
+            if userProfile.verified:
+                return Response({'message': 'User has been already verified'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Generate six number verification code
+        verification_code = str(random.randint(0, 999999))
+        while len(verification_code) < 6:
+            verification_code = "0" + verification_code
+        userProfile.verification_code = verification_code
+        userProfile.save()
+        # Send verification code via user email
+        html_message = render_to_string('email_form.html', {'verification_code': verification_code})
+        plain_message = f"Mã xác thực của bạn: {verification_code}"
+        mail.send_mail(
+            subject="Verification code",
+            from_email='Schat <schatemail.system@gmail.com>',
+            message=plain_message,
+            recipient_list=[user.email],
+            html_message=html_message
+        )
+        # Update email
+        user.email = email
+        user.save()
+        return Response({"message": "Verification code was resent", "data": data})
+        
+
+    def login(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        try:
+            user = User.objects.get(username=username)
+            if (user.check_password(password)):
+                userProfile = UserProfile.objects.get(user=user)
+                if (userProfile.verified):
+                    refresh = RefreshToken.for_user(user)
+                    token = {
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token)
+                    }
+                    return Response({"message": "Login successfully", "data": token})
+                else:
+                    return Response({"message": "User was not verified"}, status=status.HTTP_403_FORBIDDEN)
+            else:
+                return Response("Password not match")
+        except User.DoesNotExist:
+            return Response({"message": "Username not match"}, status=status.HTTP_404_NOT_FOUND)
+
+
+    def verifyEmail(self, request):
+        data = request.data
+        username = data.get('username')
+        verification_code = data.get('verification_code')
+        try:
+            user = User.objects.get(username=username)
+            userProfile = UserProfile.objects.get(user=user)
+            if userProfile.verified:
+                return Response({'message': 'User has been already verified'}, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:
             return Response({'message': 'User not found'},status=status.HTTP_404_NOT_FOUND)
+        # Verify
         if userProfile.verification_code == verification_code:
             userProfile.verified = True
             userProfile.save()
-            return Response({"message": "Account has been verified successfully"})
+            return Response({"message": "User has been verified successfully"})
         else: 
             return Response({"message": "Verification code not correct"})
 

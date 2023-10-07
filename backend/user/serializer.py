@@ -25,6 +25,8 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Username must be at least 3 characters')
         elif ' ' in value:
             raise serializers.ValidationError('Username must not contain a blank')
+        elif User.objects.filter(username=value):
+            raise serializers.ValidationError('Username had been used')
         return value
     
     def validate_password(self, value):
@@ -37,20 +39,37 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         if ' ' in value:
             raise serializers.ValidationError('Email must not contain a blank')
+        users = User.objects.filter(email=value)
+        if users:
+            for user in users:
+                userProfile = UserProfile.objects.get(user=user)
+                if userProfile.verified:
+                    raise serializers.ValidationError('Email had been used')
         return value
     
     def get(self):
         data = self.data
         return {
-            'id': data['id'],
             'username': data['username'],
             'email': data['email']
         }
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = '__all__'
+
+    def to_representation(self, instance):
+        data = super(UserProfileSerializer, self).to_representation(instance)
+        data.pop('user', None)
+        data.pop('verified', None)
+        data.pop('verification_code', None)
+        # Private info
+        data.pop("fullname")
+        data.pop("address")
+        return data
+
 
 class FriendSerializer(serializers.ModelSerializer):
     friend_with = serializers.SerializerMethodField()
@@ -58,8 +77,9 @@ class FriendSerializer(serializers.ModelSerializer):
     def get_friend_with(self, obj):
         friendProfile = UserProfile.objects.get(user=obj.friend_with)
         friendProfileSerializer = UserProfileSerializer(friendProfile, many=False)
-        friendSerializer = UserSerializer(obj.friend_with, many=False)
-        return friendSerializer.get() | friendProfileSerializer.data
+        data = friendProfileSerializer.data
+        data['username'] = obj.friend_with.username
+        return data
     
     class Meta:
         model = Friend

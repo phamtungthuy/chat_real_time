@@ -9,7 +9,7 @@ NOTIFICATION_TYPE = (
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     verified = models.BooleanField(default=False)
-    verification_code = models.CharField(max_length=5) 
+    verification_code = models.CharField(max_length=10)
     avatar_url = models.CharField(null=True, max_length=128)
     fullname = models.CharField(null=True, max_length=30)
     phone_number = models.CharField(null=True, max_length=15)
