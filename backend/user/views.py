@@ -2,12 +2,12 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse, inline_serializer
 from drf_spectacular.types import OpenApiTypes
-from .serializer import UserSerializer, FriendSerializer
+from .serializer import UserSerializer, FriendSerializer, UserProfileSerializer
 from django.contrib.auth.models import User
 from user.models import UserProfile, Friend
 from channel.serializer import ChannelSerializer
 from .response import ResponseSerializer, SuccessResponseSerializer
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -23,15 +23,23 @@ from django.utils.html import strip_tags
 
 @extend_schema(tags=['User'])
 class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
     serializer_class = UserSerializer
    
     def get_permissions(self):
-        # Allow all actions except retrieve
         if self.action == 'retrieve':
             permission_classes = [IsAuthenticated]
+        elif self.action == 'getAllUsers':
+            permission_classes = [IsAdminUser]
         else:
             permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
+
+
+    def getAllUsers(self, request):
+        users = self.queryset
+        serializer = self.serializer_class(users, many=True)
+        return Response({"message": "Get all users successfully", "data": serializer.get()})
 
 
     @extend_schema(
@@ -136,6 +144,26 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({"message": "Verification code was resent", "data": data})
         
 
+    def verifyEmail(self, request):
+        data = request.data
+        username = data.get('username')
+        verification_code = data.get('verification_code')
+        try:
+            user = User.objects.get(username=username)
+            userProfile = UserProfile.objects.get(user=user)
+            if userProfile.verified:
+                return Response({'message': 'User has been already verified'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'message': 'User not found'},status=status.HTTP_404_NOT_FOUND)
+        # Verify
+        if userProfile.verification_code == verification_code:
+            userProfile.verified = True
+            userProfile.save()
+            return Response({"message": "User has been verified successfully"})
+        else: 
+            return Response({"message": "Verification code not correct"})
+
+
     def login(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -157,25 +185,6 @@ class UserViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({"message": "Username not match"}, status=status.HTTP_404_NOT_FOUND)
 
-
-    def verifyEmail(self, request):
-        data = request.data
-        username = data.get('username')
-        verification_code = data.get('verification_code')
-        try:
-            user = User.objects.get(username=username)
-            userProfile = UserProfile.objects.get(user=user)
-            if userProfile.verified:
-                return Response({'message': 'User has been already verified'}, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist:
-            return Response({'message': 'User not found'},status=status.HTTP_404_NOT_FOUND)
-        # Verify
-        if userProfile.verification_code == verification_code:
-            userProfile.verified = True
-            userProfile.save()
-            return Response({"message": "User has been verified successfully"})
-        else: 
-            return Response({"message": "Verification code not correct"})
 
 
     @extend_schema(
@@ -224,7 +233,7 @@ class UserViewSet(viewsets.ModelViewSet):
         }
         # more customizations
     )
-    def delete(self, request, id=None, username=None):
+    def deleteUser(self, request, id=None, username=None):
         try:
             if id is None:
                 user = User.objects.get(username=username)
@@ -280,17 +289,17 @@ class UserProfileViewSet(viewsets.ViewSet):
         try:
             user = request.user
             userProfile = self.query_set.get(user_id=userId)
-            serializers = self.serializer_class(userProfile, many=False)
+            serializer = self.serializer_class(userProfile, many=False)
             isSelf = (user.id == userId)
             # If user get self profile, return full info
             if isSelf:
-                return Response({"message": "Get user profile successfully", "data": serializers.data})
+                return Response({"message": "Get user profile successfully", "data": serializer.data})
             # If user get friend profile, return friend info
-            isFriend = Friend.objects.filter(Q(user=user, friend_with=userId) | Q(user_id=friendId, friend_with=user)).exists()
+            isFriend = Friend.objects.filter(Q(user=user, friend_with=userId) | Q(user_id=userId, friend_with=user)).exists()
             if isFriend:
-                return Response({"message": "Get user profile successfully", "data": serializers.friendProfile()})
+                return Response({"message": "Get user profile successfully", "data": serializer.getFriendProfile()})
             else: # If not friend return public info
-                return Response({"message": "Get user profile successfully", "data": serializers.strangerProfile()})
+                return Response({"message": "Get user profile successfully", "data": serializer.getStrangerProfile()})
         except UserProfile.DoesNotExist:
             return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
 

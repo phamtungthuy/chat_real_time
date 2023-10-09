@@ -27,6 +27,7 @@ class ACTION:
     REMOVE_MEMBER = 'remove_member'
     SET_CHANNEL_TITLE = 'set_channel_title'
     SET_NICKNAME = 'set_nickname'
+    REMOVE_NICKNAME = 'remove_nickname'
     FRIEND_REQUEST = 'friend_request'
     FRIEND_ACCEPT = 'friend_accept'
 
@@ -213,6 +214,26 @@ def setNickname(data):
     member.save()
     data['nickname'] = member.nickname
     return data
+
+
+"""
+text_json_data = {
+    "action": "remove_nickname",
+    "target": "channel",
+    "targetId": int,
+    "data": {
+        "memberId": int,
+    }
+}
+"""
+@database_sync_to_async
+def removeNickname(data):
+    memberId = data.get('memberId')
+    member = Member.objects.get(pk=memberId)
+    member.nickname = None
+    member.save()
+    return data
+
 
 """
 text_json_data = {

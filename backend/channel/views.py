@@ -5,7 +5,7 @@ from drf_spectacular.utils import extend_schema
 from .models import Channel, Member
 from .serializer import ChannelSerializer,MemberSerializer
 from message.serializer import MessageSerializer
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
 from storages.backends.s3boto3 import S3Boto3Storage
 import uuid
@@ -16,8 +16,22 @@ import json
 
 class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()
-    permission_classes = [AllowAny]
     serializer_class = ChannelSerializer
+
+    def get_permissions(self):
+        admin_action = ['getAllChannels', 'deleteChannel']
+        if self.action in admin_action:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
+
+    def getAllChannels(self, request):
+        channels = self.queryset
+        serializer = self.serializer_class(channels, many=True)
+        return Response({"message": "Get all channels successfully", "data": serializer.data})
+
 
     def createChannel(self, request):
         data = request.data
@@ -109,7 +123,6 @@ class ChannelViewSet(viewsets.ModelViewSet):
 
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
-    permission_classes = [AllowAny]
     serializer_class = MemberSerializer
 
     def deleteMember(self, request, memberId):

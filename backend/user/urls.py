@@ -23,7 +23,11 @@ urlpatterns = [
     path('user/<str:username>/', UserViewSet.as_view({
         'get': 'retrieve',
         'put': 'update',
-        'delete': 'delete'
+        'delete': 'deleteUser'
+    })),
+    # Admin request
+    path('all/', UserViewSet.as_view({
+        'get': 'getAllUsers',
     })),
     # path('<int:id>/user/', UserViewSet.as_view({
     #     'get': 'retrieve',

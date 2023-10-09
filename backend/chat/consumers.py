@@ -85,6 +85,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return await async_db.removeMember(data)
         if action == ACTION.SET_NICKNAME:
             return await async_db.setNickname(data)
+        if action == ACTION.REMOVE_NICKNAME:
+            return await async_db.removeNickname(data)
         if action == ACTION.SET_CHANNEL_TITLE:
             return await async_db.setChannelTitle(data)
         if action == ACTION.FRIEND_REQUEST:

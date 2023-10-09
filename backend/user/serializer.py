@@ -5,13 +5,22 @@ from drf_spectacular.utils import extend_schema_serializer
 from django.core.validators import RegexValidator
 from django.contrib.auth.hashers import make_password, check_password
 
+class UserListSerializer(serializers.ListSerializer):
+    def get(self):
+        data_set = self.data
+        for i, data in enumerate(data_set):
+            data_set[i].pop('password', None)
+        return data_set
+
 class UserSerializer(serializers.ModelSerializer):
     username=serializers.CharField(required=False)
     password=serializers.CharField(required=False)
     email = serializers.EmailField(required=False)
+
     class Meta:
         model = User
         fields = ['id', 'username', 'password', 'email']
+        list_serializer_class = UserListSerializer
     
     def validate(self, data):
         if self.instance is not None:
@@ -49,10 +58,11 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get(self):
         data = self.data
-        return {
-            'username': data['username'],
-            'email': data['email']
+        data = {
+            "username": data['username'],
+            "email": data['email']
         }
+        return data
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -67,11 +77,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         data.pop('verification_code', None)
         return data
         
-    def friendProflie(self):
-        data.pop("address")
+    def getFriendProfile(self):
+        data = self.data
+        data.pop("address", None)
         return data
 
-    def strangerProfile(self):
+    def getStrangerProfile(self):
         data = self.data
         return {
             'avatar_url': data['avatar_url'],
@@ -85,7 +96,7 @@ class FriendSerializer(serializers.ModelSerializer):
     def get_friend_with(self, obj):
         friendProfile = UserProfile.objects.get(user=obj.friend_with)
         friendProfileSerializer = UserProfileSerializer(friendProfile, many=False)
-        data = friendProfileSerializer.data
+        data = friendProfileSerializer.getFriendProfile()
         data['username'] = obj.friend_with.username
         return data
     
