@@ -10,8 +10,8 @@ REPORT_TYPE = (
 class Report(models.Model):
     reporter = models.ForeignKey(User, related_name='reporters', on_delete=models.DO_NOTHING)
     report_type = models.CharField(max_length=20, choices=REPORT_TYPE)
-    reported_user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
-    reported_channel = models.ForeignKey(Channel, on_delete=models.DO_NOTHING)
+    reported_user = models.ForeignKey(User, null=True, on_delete=models.DO_NOTHING)
+    reported_channel = models.ForeignKey(Channel, null=True, on_delete=models.DO_NOTHING)
     reason = models.TextField()
     processed = models.BooleanField(default=False)
     create_at = models.DateTimeField(auto_now_add=True)

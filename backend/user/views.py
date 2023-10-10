@@ -102,7 +102,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"message": "Verification code was sent", "data": serializer.get()})
         message = ""
         for key, value in serializer.errors.items():
-            message += value[0]
+            message += f'{value[0]} ({key})'
             break
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     
@@ -213,7 +213,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'message': 'Updated successfuly'}, status=status.HTTP_200_OK)
             message = ""
             for key, value in serializer.errors.items():
-                message += value[0]
+                message += f'{value[0]} ({key})'
                 break
             return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:

@@ -19,8 +19,8 @@ class ChannelViewSet(viewsets.ModelViewSet):
     serializer_class = ChannelSerializer
 
     def get_permissions(self):
-        admin_action = ['getAllChannels', 'deleteChannel']
-        if self.action in admin_action:
+        admin_actions = ['getAllChannels', 'deleteChannel']
+        if self.action in admin_actions:
             permission_classes = [IsAdminUser]
         else:
             permission_classes = [IsAuthenticated]
