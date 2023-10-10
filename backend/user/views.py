@@ -100,10 +100,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 html_message=html_message
             )
             return Response({"message": "Verification code was sent", "data": serializer.get()})
-            # return Response({
-            #     'message': 'Account created successfully',
-            #     'data': serializer.get()
-            #     },status=status.HTTP_200_OK)
         message = ""
         for key, value in serializer.errors.items():
             message += value[0]
@@ -302,6 +298,21 @@ class UserProfileViewSet(viewsets.ViewSet):
                 return Response({"message": "Get user profile successfully", "data": serializer.getStrangerProfile()})
         except UserProfile.DoesNotExist:
             return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+    def updateUserProfile(self, request):
+        user = request.user
+        data = request.data
+        userProfile = self.query_set.get(user=user)
+        serializer = UserProfileSerializer(instance=userProfile, data=data)
+        if serializer.is_valid():
+            updatedData = serializer.save()
+            return Response({'message': 'Update user profile successfuly', "data": serializer.data})
+        message = ""
+        for key, value in serializer.errors.items():
+            message += f'{value[0]} ({key})'
+            break
+        return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FriendViewSet(viewsets.ViewSet):

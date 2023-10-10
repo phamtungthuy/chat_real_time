@@ -13,8 +13,8 @@ class UserListSerializer(serializers.ListSerializer):
         return data_set
 
 class UserSerializer(serializers.ModelSerializer):
-    username=serializers.CharField(required=False)
-    password=serializers.CharField(required=False)
+    username = serializers.CharField(required=False)
+    password = serializers.CharField(required=False)
     email = serializers.EmailField(required=False)
 
     class Meta:
@@ -66,6 +66,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(required=False)
+    verification_code = serializers.CharField(required=False)
+
     class Meta:
         model = UserProfile
         fields = '__all__'
@@ -76,6 +79,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
         data.pop('verified', None)
         data.pop('verification_code', None)
         return data
+    
+    def update(self, instance, validated_data):
+        instance.fullname = validated_data.get('fullname', instance.fullname)
+        instance.phone_number = validated_data.get('phone_number', instance.phone_number)
+        instance.address = validated_data.get('address', instance.address)
+        instance.save()
+        return instance
+
         
     def getFriendProfile(self):
         data = self.data

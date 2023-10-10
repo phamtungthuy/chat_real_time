@@ -36,6 +36,9 @@ urlpatterns = [
     # })),
     
     # UserProflieViewSet
+    path('profile/', UserProfileViewSet.as_view({
+        'put': 'updateUserProfile',
+    })),
     path('profile/<int:userId>/', UserProfileViewSet.as_view({
         'get': 'getUserProfile',
     })),
