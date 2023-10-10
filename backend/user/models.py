@@ -7,11 +7,6 @@ NOTIFICATION_TYPE = (
     ("FRIEND_ACCEPT", "friend_accept"),
 )
 
-REPORT_TYPE = (
-    ("REPORT_USER", "report_user"),
-    ("REPORT_CHANNEL", "report_channel")
-)
-
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     verified = models.BooleanField(default=False)
@@ -30,13 +25,4 @@ class Notification(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE)
     sender = models.ForeignKey(User, related_name="senders", on_delete=models.CASCADE)
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE)
-    create_at = models.DateTimeField(auto_now_add=True)
-
-class Report(models.Model):
-    reporter = models.ForeignKey(User, related_name='reporters', on_delete=models.DO_NOTHING)
-    report_type = models.CharField(max_length=20, choices=REPORT_TYPE)
-    reported_user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
-    reported_channel = models.ForeignKey(Channel, on_delete=models.DO_NOTHING)
-    reason = models.TextField()
-    processed = models.BooleanField(default=False)
     create_at = models.DateTimeField(auto_now_add=True)

@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/channel/', include('channel.urls')),
     path('api/message/', include('message.urls')),
     path('api/user/', include('user.urls')),
+    path('api/report/', include('report.urls')),
 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
