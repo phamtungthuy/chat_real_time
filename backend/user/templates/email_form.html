@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực tài khoản của bạn</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #cdcdcd;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .verification {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .verification-code {
+            font-size: 32px;
+            font-weight: bold;
+            padding: 30px 0 30px 0;
+        }
+        .instructions {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td align="center">
+                    <div class="header">
+                        <h1>Xác thực tài khoản Schat</h1>
+                    </div>
+                    <div class="verification">
+                        Mã xác thực của bạn: <div class='verification-code' style="color: #2276d0;">{{verification_code}}</div>
+                    </div>
+                    <div class="instructions">
+                        Vui lòng sử dụng mã xác thực trên để hoàn thành quy trình đăng ký.
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

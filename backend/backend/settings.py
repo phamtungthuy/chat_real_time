@@ -137,6 +137,7 @@ REST_FRAMEWORK = {
     # YOUR SETTINGS
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 
+    # Set default authen as JWT
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
@@ -150,7 +151,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=90),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -166,3 +167,25 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+
+# CONFIG TO UPLOAD AWS S3
+AWS_S3_ACCESS_KEY_ID = os.getenv('AWS_S3_ACCESS_KEY_ID')
+AWS_S3_SECRET_ACCESS_KEY = os.getenv('AWS_S3_SECRET_ACCESS_KEY')
+AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+
+AWS_S3_MAX_MEMORY_SIZE = 10000000 # 10MB
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_FILE_OVERWRITE = False
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+
+# Email system
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True

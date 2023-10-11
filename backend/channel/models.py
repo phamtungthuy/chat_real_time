@@ -9,10 +9,11 @@ ROLES = (
 
 class Channel(models.Model):
     title = models.CharField(max_length=30)
+    avatar_url = models.CharField(null=True, max_length=128)
     create_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title
+        return f'{self.id}_{self.title}'
 
 class Member(models.Model):
     user = models.ForeignKey(User, related_name='members', on_delete=models.CASCADE)
@@ -21,4 +22,4 @@ class Member(models.Model):
     role = models.CharField(max_length=10, default="MEMBER", choices=ROLES)
 
     def __str__(self):
-        return str(self.user) + " - " + str(self.channel)
+        return f'{self.user} in {self.channel.title}'

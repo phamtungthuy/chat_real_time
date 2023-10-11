@@ -11,7 +11,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         # Check if user is authenticated
         if self.scope['user'].is_anonymous:
-            return await self.close(code=1000)
+            await self.accept()
+            return await self.close(code=3000)
         else:
             self.user = self.scope['user']
         # Set online status
@@ -27,8 +28,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
+        if close_code == 3000:
+            return
         # Change offline status
-        await async_db.setOfflineUser(self.userId)
+        await async_db.setOfflineUser(self.user)
         # Leave all chat group
         for channel in self.channels:
             group_name = f'group_{channel.id}'
@@ -82,6 +85,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return await async_db.removeMember(data)
         if action == ACTION.SET_NICKNAME:
             return await async_db.setNickname(data)
+        if action == ACTION.REMOVE_NICKNAME:
+            return await async_db.removeNickname(data)
         if action == ACTION.SET_CHANNEL_TITLE:
             return await async_db.setChannelTitle(data)
         if action == ACTION.FRIEND_REQUEST:
