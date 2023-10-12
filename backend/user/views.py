@@ -27,9 +27,10 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
    
     def get_permissions(self):
+        admin_actions = ['getAllUsers', 'deleteUser']
         if self.action == 'retrieve':
             permission_classes = [IsAuthenticated]
-        elif self.action == 'getAllUsers':
+        elif self.action in admin_actions:
             permission_classes = [IsAdminUser]
         else:
             permission_classes = [AllowAny]
@@ -235,10 +236,23 @@ class UserViewSet(viewsets.ModelViewSet):
                 user = User.objects.get(username=username)
             else:
                 user = User.objects.get(id=id)
+            text_data_json = {
+                "action": "delete_user",
+                "target": "user",
+                "targetId": user.id,
+                "data": {
+                    "message": "Your account has been deleted by admin"
+                }
+            }
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(f'user_{user.id}', {
+                "type": "chat.send",
+                "text_data_json": text_data_json
+            })
             user.delete()
         except User.DoesNotExist:
-            return Response({'message': f'User not found'},status=status.HTTP_404_NOT_FOUND)
-        return Response({'message': 'Deleted user successfully!'}, status=status.HTTP_200_OK)
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'message': 'Delete user successfully'}, status=status.HTTP_200_OK)
     
     def uploadUserAvatar(self, request):
         file_obj = request.FILES.get('file')

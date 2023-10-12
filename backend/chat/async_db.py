@@ -58,6 +58,15 @@ def getUserChannels(user):
     channels = [member.channel for member in members]
     return channels
 
+@database_sync_to_async
+def isCreator(user, channelId):
+    channel = Channel.objects.get(pk=channelId)
+    members = channel.members.all()
+    member = members.filter(user=user)
+    if member.role == "CREATOR":
+        return True
+    return False
+
 """
 text_json_data = {
     "action": "create_message",
@@ -166,7 +175,6 @@ def removeMember(data):
     member.delete()
     return data
 
-
 """
 text_json_data = {
     "action": "set_channel_title",
@@ -268,7 +276,7 @@ text_json_data = {
 """
 @database_sync_to_async
 def friendAccept(user, data):
-    friend_with = data.get('user')
+    friend_with = data.get('receiver')
     Friend.objects.create(user=user, friend_with_id=friend_with)
     Friend.objects.create(user_id=friend_with, friend_with=user)
     data.update({

@@ -3,8 +3,7 @@ from django.contrib.auth.models import User
 
 ROLES = (
     ("MEMBER", "Thành viên"),
-    ("ADMIN", "Quản trị viên"),
-    ("CREATOR", "Người lập nhóm")
+    ("CREATOR", "Trưởng nhóm")
 )
 
 class Channel(models.Model):
