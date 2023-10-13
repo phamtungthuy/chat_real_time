@@ -20,7 +20,7 @@ urlpatterns = [
     path('upload/avatar/', UserViewSet.as_view({
         'post': 'uploadUserAvatar',
     })),
-    path('user/<str:username>/', UserViewSet.as_view({
+    path('<int:userId>/', UserViewSet.as_view({
         'get': 'retrieve',
         'put': 'update',
         'delete': 'deleteUser'

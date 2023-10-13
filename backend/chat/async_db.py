@@ -25,6 +25,8 @@ class ACTION:
     REMOVE_REACTION = 'remove_reaction'
     ADD_MEMBER = 'add_member'
     REMOVE_MEMBER = 'remove_member'
+    OUT_CHANNEL = 'out_channel'
+    CHANGE_CREATOR = 'change_creator'
     SET_CHANNEL_TITLE = 'set_channel_title'
     SET_NICKNAME = 'set_nickname'
     REMOVE_NICKNAME = 'remove_nickname'
@@ -174,6 +176,50 @@ def removeMember(data):
     member = Member.objects.get(pk=memberId)
     member.delete()
     return data
+
+
+"""
+text_json_data = {
+    "action": "out_channel",
+    "target": "channel",
+    "targetId": int,
+    "data": {
+        "channelId": int 
+    }
+}
+"""
+@database_sync_to_async
+def outChannel(user, data):
+    channelId = data.get('channelId')
+    member = Member.objects.get(user=user, channel_id=channelId)
+    if member.role == 'CREATOR':
+        raise Exception("You can not out channel while you are still creator")
+    member.delete()
+    data['memberId'] = user.id
+    return data
+
+
+"""
+text_json_data = {
+    "action": "change_creator",
+    "target": "channel",
+    "targetId": int,
+    "data": {
+        "memberId": int
+    }
+}
+"""
+@database_sync_to_async
+def changeCreator(user, data):
+    memberId = data.get('memberId')
+    newCreator = Member.objects.get(pk=memberId)
+    oldCreator = Member.objects.get(user=user, channel=newCreator.channel)
+    oldCreator.role = "MEMBER"
+    oldCreator.save()
+    newCreator.role = "CREATOR"
+    newCreator.save()
+    return data
+
 
 """
 text_json_data = {

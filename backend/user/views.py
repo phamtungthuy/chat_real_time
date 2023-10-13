@@ -221,6 +221,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'message': f'User not found'},status=status.HTTP_404_NOT_FOUND)
         return Response({'message': 'Error when updating'}, status=status.HTTP_400_BAD_REQUEST)
     
+
     @extend_schema(
         responses={
             200: OpenApiResponse(response=SuccessResponseSerializer,
@@ -230,12 +231,12 @@ class UserViewSet(viewsets.ModelViewSet):
         }
         # more customizations
     )
-    def deleteUser(self, request, id=None, username=None):
+    def deleteUser(self, request, userId=None, username=None):
         try:
             if id is None:
                 user = User.objects.get(username=username)
             else:
-                user = User.objects.get(id=id)
+                user = User.objects.get(pk=userId)
             text_data_json = {
                 "action": "delete_user",
                 "target": "user",
