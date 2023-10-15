@@ -25,3 +25,4 @@ channels_redis==4.1.0
 django-storages==1.14.1
 boto3==1.28.57
 awscli==1.29.57
+django-silk==5.0.4

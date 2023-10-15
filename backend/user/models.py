@@ -18,11 +18,11 @@ class UserProfile(models.Model):
     online = models.BooleanField(default=False)
 
 class Friend(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    friend_with = models.ForeignKey(User, related_name='friends', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='friends', on_delete=models.CASCADE)
+    friend_with = models.ForeignKey(User, on_delete=models.CASCADE)
 
 class Notification(models.Model):
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE)
-    sender = models.ForeignKey(User, related_name="senders", on_delete=models.CASCADE)
+    receiver = models.ForeignKey(User, related_name="notifications", on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE)
     create_at = models.DateTimeField(auto_now_add=True)
