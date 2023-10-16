@@ -48,11 +48,7 @@ def setOfflineUser(user):
     userProfile = UserProfile.objects.get(user=user)
     userProfile.online = False
     userProfile.save()
-
-@database_sync_to_async
-def getOnlineUser():
-    onlineUser = UserProfile.objects.filter(online=True)
-    return onlineUser
+    
 
 @database_sync_to_async
 def getUserChannels(user):
@@ -62,9 +58,7 @@ def getUserChannels(user):
 
 @database_sync_to_async
 def isCreator(user, channelId):
-    channel = Channel.objects.get(pk=channelId)
-    members = channel.members.all()
-    member = members.filter(user=user)
+    member = Member.objects.get(user=user, channel_id=channelId)
     if member.role == "CREATOR":
         return True
     return False
@@ -194,8 +188,8 @@ def outChannel(user, data):
     member = Member.objects.get(user=user, channel_id=channelId)
     if member.role == 'CREATOR':
         raise Exception("You can not out channel while you are still creator")
+    data['memberId'] = member.id
     member.delete()
-    data['memberId'] = user.id
     return data
 
 
@@ -236,13 +230,11 @@ text_json_data = {
 def setChannelTitle(data):
     channelId = data.get('channelId')
     title = data.get('title')
-    title = title.strip()
-    if title == "":
-        serializers.ValidationError('Title must not be blank')
     channel = Channel.objects.get(pk=channelId)
-    channel.title = title
-    channel.save()
-    data['title'] = title
+    serializer = ChannelSerializer(channel, data=data, partial=True)
+    if serializer.is_valid(raise_exception=True):
+        channel = serializer.update_title(title)
+    data['title'] = channel.title
     return data
 
 """
@@ -261,11 +253,9 @@ def setNickname(data):
     memberId = data.get('memberId')
     nickname = data.get('nickname')
     member = Member.objects.get(pk=memberId)
-    nickname = nickname.strip()
-    if nickname == "":
-        raise serializers.ValidationError('Nickname must not be blank')
-    member.nickname = nickname
-    member.save()
+    serializer = MemberSerializer(member, data=data, partial=True)
+    if (serializer.is_valid(raise_exception=True)):
+        member = serializer.update_nickname(nickname)
     data['nickname'] = member.nickname
     return data
 

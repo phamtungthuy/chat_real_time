@@ -38,7 +38,7 @@ urlpatterns = [
     path('profile/avatar/', UserProfileViewSet.as_view({
         'put': 'uploadUserAvatar',
     })),
-    path('profile/<int:userId>/', UserProfileViewSet.as_view({
+    path('<int:userId>/profile', UserProfileViewSet.as_view({
         'get': 'getUserProfile',
     })),
 

@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from drf_spectacular.utils import extend_schema
 from .models import Channel, Member
+from .schema import *
 from .serializer import ChannelSerializer,MemberSerializer
 from message.serializer import MessageSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -105,6 +106,17 @@ class ChannelViewSet(viewsets.ModelViewSet):
             serializer = MemberSerializer(memberList, many=True)
             return Response({'message': 'Get member list successfully', 'data': serializer.data})
         except Channel.DoesNotExist:
+            return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+    @getMessageListSchema
+    def getMessageList(self, request, channelId):
+        try:
+            channel = self.queryset.get(pk=channelId)
+            messageList = channel.messages.all()
+            serializer = MessageSerializer(messageList, many=True)
+            return Response({'message': 'Get message list successfully', 'data': serializer.data})
+        except:
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
 

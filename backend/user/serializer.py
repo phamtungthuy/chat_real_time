@@ -3,16 +3,31 @@ from django.contrib.auth.models import User
 from .models import UserProfile, Friend, Notification
 from drf_spectacular.utils import extend_schema_serializer
 from django.core.validators import RegexValidator
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import make_password
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'password', 'email']
+        fields = ['id', 'username', 'avatar_url', 'password', 'email', 'first_name', 'last_name']
         extra_kwargs = {
             'password': {'write_only': True},
         }
-    
+
+    def get_avatar_url(self, obj):
+        return obj.profile.avatar_url
+
+    def to_representation(self, instance):
+        data = super(UserSerializer, self).to_representation(instance)
+        data['fullname'] = f'{instance.first_name} {instance.last_name}'
+        return data
+
+    def get(self):
+        data = self.data
+        data.pop('email')
+        return data
+
     def create(self, validated_data):
         required_fields = ['username', 'password', 'email', 'first_name', 'last_name']
         if any(key not in validated_data.keys() for key in required_fields):
@@ -45,18 +60,28 @@ class UserSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError('Email had been used')
         return value
 
+    def validate_first_name(self, value):
+        if not value or any(not c.isalpha() for c in value):
+            raise ValueError("First name only includes alphabet letters")
+        return value
+
+    def validate_last_name(self, value):
+        if not value or any(not c.isalpha() for c in value):
+            raise ValueError("Last name only includes alphabet letters")
+        return value
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['user', 'avatar_url', 'fullname', 'phone_number', 'address', 'online']
+        fields = ['user', 'bio', 'avatar_url', 'phone_number', 'address', 'online']
         extra_kwargs = {
             'verified': {'write_only': True},
             'verification_code': {'write_only': True}
         }
     
     def update(self, instance, validated_data):
-        instance.fullname = validated_data.get('fullname', instance.fullname)
+        instance.bio = validated_data.get('bio', instance.bio)
         instance.phone_number = validated_data.get('phone_number', instance.phone_number)
         instance.address = validated_data.get('address', instance.address)
         instance.save()
@@ -69,11 +94,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def getStrangerProfile(self):
         data = self.data
-        return {
-            'user': data['user'],
-            'avatar_url': data['avatar_url'],
-            'fullname': data['fullname']
-        }
+        data.pop('phone_number', None)
+        data.pop('address', None)
+        data.pop('online', None)
+        return data
 
 
 class FriendSerializer(serializers.ModelSerializer):
@@ -84,9 +108,8 @@ class FriendSerializer(serializers.ModelSerializer):
         fields = ['friend']
 
     def get_friend(self, obj):
-        friend = UserProfile.objects.get(user=obj.friend_with)
-        friendSerializer = UserProfileSerializer(friend, many=False)
-        data = friendSerializer.getStrangerProfile()
+        friendSerializer = UserSerializer(obj.friend_with, many=False)
+        data = friendSerializer.get()
         return data
     
     def to_representation(self, instance):
@@ -104,8 +127,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             'receiver': {'write_only': True}
         }
 
-    def get_sender(self, obj):
-        sender = UserProfile.objects.get(user=obj.sender)        
-        senderSerializer = UserProfileSerializer(sender, many=False)
-        data = senderSerializer.getStrangerProfile()
+    def get_sender(self, obj):       
+        senderSerializer = UserSerializer(obj.sender, many=False)
+        data = senderSerializer.get()
         return data

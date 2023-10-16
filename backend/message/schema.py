@@ -4,15 +4,6 @@ from .serializer import MessageSerializer, ReactionSerializer, EmojiSerializer
 
 # Message schema
 
-getMessageListSchema = extend_schema(
-    summary = 'Get message list by channel id',
-    responses = {
-        200: OpenApiResponse(response=MessageSerializer(many=True),
-                             description="Get message list successfully"),
-        404: OpenApiResponse(description="Channel not found")
-    }
-)
-
 createMessageSchema = extend_schema(
     summary = 'Create message',
     request = MessageSerializer,
