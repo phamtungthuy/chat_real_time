@@ -20,15 +20,6 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     serializer_class = MessageSerializer
 
-    @getMessageListSchema
-    def getMessageList(self, request, channelId):
-        try:
-            messageList = self.queryset.filter(channel=channelId)
-            serializer = self.serializer_class(messageList, many=True)
-            return Response({'message': 'Get message list successfully', 'data': serializer.data})
-        except:
-            return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
-
     @createMessageSchema
     def createMessage(self, request):
         data = request.data

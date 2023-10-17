@@ -25,6 +25,8 @@ class ACTION:
     REMOVE_REACTION = 'remove_reaction'
     ADD_MEMBER = 'add_member'
     REMOVE_MEMBER = 'remove_member'
+    OUT_CHANNEL = 'out_channel'
+    CHANGE_CREATOR = 'change_creator'
     SET_CHANNEL_TITLE = 'set_channel_title'
     SET_NICKNAME = 'set_nickname'
     REMOVE_NICKNAME = 'remove_nickname'
@@ -46,17 +48,20 @@ def setOfflineUser(user):
     userProfile = UserProfile.objects.get(user=user)
     userProfile.online = False
     userProfile.save()
-
-@database_sync_to_async
-def getOnlineUser():
-    onlineUser = UserProfile.objects.filter(online=True)
-    return onlineUser
+    
 
 @database_sync_to_async
 def getUserChannels(user):
     members = user.members.all()
     channels = [member.channel for member in members]
     return channels
+
+@database_sync_to_async
+def isCreator(user, channelId):
+    member = Member.objects.get(user=user, channel_id=channelId)
+    if member.role == "CREATOR":
+        return True
+    return False
 
 """
 text_json_data = {
@@ -169,6 +174,49 @@ def removeMember(data):
 
 """
 text_json_data = {
+    "action": "out_channel",
+    "target": "channel",
+    "targetId": int,
+    "data": {
+        "channelId": int 
+    }
+}
+"""
+@database_sync_to_async
+def outChannel(user, data):
+    channelId = data.get('channelId')
+    member = Member.objects.get(user=user, channel_id=channelId)
+    if member.role == 'CREATOR':
+        raise Exception("You can not out channel while you are still creator")
+    data['memberId'] = member.id
+    member.delete()
+    return data
+
+
+"""
+text_json_data = {
+    "action": "change_creator",
+    "target": "channel",
+    "targetId": int,
+    "data": {
+        "memberId": int
+    }
+}
+"""
+@database_sync_to_async
+def changeCreator(user, data):
+    memberId = data.get('memberId')
+    newCreator = Member.objects.get(pk=memberId)
+    oldCreator = Member.objects.get(user=user, channel=newCreator.channel)
+    oldCreator.role = "MEMBER"
+    oldCreator.save()
+    newCreator.role = "CREATOR"
+    newCreator.save()
+    return data
+
+
+"""
+text_json_data = {
     "action": "set_channel_title",
     "target": "channel",
     "targetId": int,
@@ -182,13 +230,11 @@ text_json_data = {
 def setChannelTitle(data):
     channelId = data.get('channelId')
     title = data.get('title')
-    title = title.strip()
-    if title == "":
-        serializers.ValidationError('Title must not be blank')
     channel = Channel.objects.get(pk=channelId)
-    channel.title = title
-    channel.save()
-    data['title'] = title
+    serializer = ChannelSerializer(channel, data=data, partial=True)
+    if serializer.is_valid(raise_exception=True):
+        channel = serializer.update_title(title)
+    data['title'] = channel.title
     return data
 
 """
@@ -207,11 +253,9 @@ def setNickname(data):
     memberId = data.get('memberId')
     nickname = data.get('nickname')
     member = Member.objects.get(pk=memberId)
-    nickname = nickname.strip()
-    if nickname == "":
-        raise serializers.ValidationError('Nickname must not be blank')
-    member.nickname = nickname
-    member.save()
+    serializer = MemberSerializer(member, data=data, partial=True)
+    if (serializer.is_valid(raise_exception=True)):
+        member = serializer.update_nickname(nickname)
     data['nickname'] = member.nickname
     return data
 
@@ -268,7 +312,7 @@ text_json_data = {
 """
 @database_sync_to_async
 def friendAccept(user, data):
-    friend_with = data.get('user')
+    friend_with = data.get('receiver')
     Friend.objects.create(user=user, friend_with_id=friend_with)
     Friend.objects.create(user_id=friend_with, friend_with=user)
     data.update({

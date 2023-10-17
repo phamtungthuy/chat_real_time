@@ -18,8 +18,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Set online status
         await async_db.setOnlineUser(self.user)
         # Join all chat group
-        self.channels = await async_db.getUserChannels(self.user)
-        for channel in self.channels:
+        channels = await async_db.getUserChannels(self.user)
+        for channel in channels:
             group_name = f'group_{channel.id}'
             await self.channel_layer.group_add(group_name, self.channel_name)
         # Set a group for only user
@@ -27,15 +27,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Accept ws connect
         await self.accept()
 
+
     async def disconnect(self, close_code):
         if close_code == 3000:
             return
         # Change offline status
         await async_db.setOfflineUser(self.user)
         # Leave all chat group
-        for channel in self.channels:
-            group_name = f'group_{channel.id}'
-            await self.channel_layer.group_discard(group_name, self.channel_name)
+        channels = await async_db.setOnlineUser(self.user)
+        if channels is not None:
+            for channel in channels:
+                group_name = f'group_{channel.id}'
+                await self.channel_layer.group_discard(group_name, self.channel_name)
+
 
     # Receive message from WebSocket
     async def receive(self, text_data):
@@ -60,6 +64,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Send error message to user send
             await self.send(text_data=text_data)
 
+
     # Receive message from group
     async def chat_send(self, event):
         text_data_json = event["text_data_json"]
@@ -67,10 +72,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Send message to WebSocket
         await self.send(text_data=text_data)
 
+
     async def dbAsyncHandle(self, text_data_json):
         action = text_data_json.get('action')
+        targetId = text_data_json.get('targetId')
         data = text_data_json.get('data')
 
+        # Member, creator action
         if action == ACTION.CREATE_MESSAGE:
             return await async_db.createMessage(data)
         if action == ACTION.REMOVE_MESSAGE:
@@ -79,17 +87,35 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return await async_db.createReaction(data)
         if action == ACTION.REMOVE_REACTION:
             return await async_db.deleteReaction(data)
-        if action == ACTION.ADD_MEMBER:
-            return await async_db.addMember(data)
-        if action == ACTION.REMOVE_MEMBER:
-            return await async_db.removeMember(data)
+        if action == ACTION.OUT_CHANNEL:
+            return await async_db.outChannel(self.user, data)
         if action == ACTION.SET_NICKNAME:
             return await async_db.setNickname(data)
         if action == ACTION.REMOVE_NICKNAME:
             return await async_db.removeNickname(data)
-        if action == ACTION.SET_CHANNEL_TITLE:
-            return await async_db.setChannelTitle(data)
         if action == ACTION.FRIEND_REQUEST:
             return await async_db.friendRequest(self.user, data)
         if action == ACTION.FRIEND_ACCEPT:
             return await async_db.friendAccept(self.user, data)
+            
+        # Creator action
+        if action == ACTION.ADD_MEMBER:
+            if async_db.isCreator(self.user, targetId):
+                return await async_db.addMember(data)
+            else:
+                raise Exception("User is not creator to perform this action")
+        if action == ACTION.REMOVE_MEMBER:
+            if async_db.isCreator(self.user, targetId):
+                return await async_db.removeMember(data)
+            else:
+                raise Exception("User is not creator to perform this action")
+        if action == ACTION.SET_CHANNEL_TITLE:
+            if async_db.isCreator(self.user, targetId):
+                return await async_db.setChannelTitle(self.user, data)
+            else:
+                raise Exception("User is not creator to perform this action")
+        if action == ACTION.CHANGE_CREATOR:
+            if async_db.isCreator(self.user, targetId):
+                return await async_db.changeCreator(self.user, data)
+            else:
+                raise Exception("User is not creator to perform this action")

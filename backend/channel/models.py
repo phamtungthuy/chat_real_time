@@ -3,8 +3,7 @@ from django.contrib.auth.models import User
 
 ROLES = (
     ("MEMBER", "Thành viên"),
-    ("ADMIN", "Quản trị viên"),
-    ("CREATOR", "Người lập nhóm")
+    ("CREATOR", "Trưởng nhóm")
 )
 
 class Channel(models.Model):
@@ -22,4 +21,4 @@ class Member(models.Model):
     role = models.CharField(max_length=10, default="MEMBER", choices=ROLES)
 
     def __str__(self):
-        return f'{self.user} in {self.channel.title}'
+        return f'{self.user}_{self.channel.title}'

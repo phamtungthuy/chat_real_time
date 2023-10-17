@@ -17,6 +17,9 @@ urlpatterns = [
     path('<int:channelId>/members/', ChannelViewSet.as_view({
         'get': 'getMemberList',
     })),
+    path('<int:channelId>/messages/', ChannelViewSet.as_view({
+        'get': 'getMessageList',
+    })),
     path('<int:channelId>/media/', ChannelViewSet.as_view({
         'get': 'getMediaList',
     })),

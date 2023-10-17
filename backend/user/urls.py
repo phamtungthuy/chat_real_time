@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserViewSet, UserProfileViewSet, FriendViewSet
+from .views import UserViewSet, UserProfileViewSet, FriendViewSet, NotificationViewSet
 
 urlpatterns = [
     path('signup/', UserViewSet.as_view({
@@ -17,18 +17,14 @@ urlpatterns = [
     path('channels/', UserViewSet.as_view({
         'get': 'getChannelList',
     })),
-    path('upload/avatar/', UserViewSet.as_view({
-        'post': 'uploadUserAvatar',
-    })),
-    path('user/<str:username>/', UserViewSet.as_view({
-        'get': 'retrieve',
-        'put': 'update',
-        'delete': 'deleteUser'
-    })),
-    # Admin request
     path('all/', UserViewSet.as_view({
         'get': 'getAllUsers',
     })),
+    # path('<int:userId>/', UserViewSet.as_view({
+    #     'get': 'retrieve',
+    #     'put': 'update',
+    #     'delete': 'deleteUser'
+    # })),    
     # path('<int:id>/user/', UserViewSet.as_view({
     #     'get': 'retrieve',
     #     'put': 'update',
@@ -39,7 +35,10 @@ urlpatterns = [
     path('profile/', UserProfileViewSet.as_view({
         'put': 'updateUserProfile',
     })),
-    path('profile/<int:userId>/', UserProfileViewSet.as_view({
+    path('profile/avatar/', UserProfileViewSet.as_view({
+        'put': 'uploadUserAvatar',
+    })),
+    path('<int:userId>/profile', UserProfileViewSet.as_view({
         'get': 'getUserProfile',
     })),
 
@@ -49,5 +48,10 @@ urlpatterns = [
     })),
     path('friend/<int:friendId>/', FriendViewSet.as_view({
         'delete': 'deleteFriend',
+    })),
+
+    # NotificationViewSet
+    path('notifications/', NotificationViewSet.as_view({
+        'get': 'getNotificationList'
     }))
 ]

@@ -3,9 +3,6 @@ from .views import MessageViewSet, ReactionViewSet, getEmojiList
 
 urlpatterns = [
     # Message url
-    path('all/<int:channelId>/', MessageViewSet.as_view({
-        'get': 'getMessageList',
-    })),
     path('upload/image/', MessageViewSet.as_view({
         'post': 'uploadImage',
     })),

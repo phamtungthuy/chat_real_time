@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from drf_spectacular.utils import extend_schema
 from .models import Channel, Member
+from .schema import *
 from .serializer import ChannelSerializer,MemberSerializer
 from message.serializer import MessageSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -13,14 +14,13 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import json
 
-
 class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()
     serializer_class = ChannelSerializer
 
     def get_permissions(self):
-        admin_action = ['getAllChannels', 'deleteChannel']
-        if self.action in admin_action:
+        admin_actions = ['getAllChannels', 'deleteChannel']
+        if self.action in admin_actions:
             permission_classes = [IsAdminUser]
         else:
             permission_classes = [IsAuthenticated]
@@ -33,20 +33,60 @@ class ChannelViewSet(viewsets.ModelViewSet):
         return Response({"message": "Get all channels successfully", "data": serializer.data})
 
 
+    def deleteChannel(self, request, channelId):
+        try:
+            channel = self.queryset.get(pk=channelId)
+            text_data_json = {
+                "action": "delete_channel",
+                "target": "channel",
+                "targetId": channel.id,
+                "data": {
+                    "message": "Your channel has been deleted by admin"
+                }
+            }
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(f'group_{channelId}', {
+                "type": "chat.send",
+                "text_data_json": text_data_json
+            })
+            channel.delete()
+            return Response({'message': 'Delete channel successfully'})
+        except Channel.DoesNotExist:
+            return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
     def createChannel(self, request):
         data = request.data
+        creator = request.user
         title = data.get('title')
-        creator = data.get('creator')
         members = data.get('members')
+
+        if len(members) < 3:
+            return Response({"message": "A channel needs at least three members"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             channel = self.queryset.create(title=title)
-            Member.objects.create(user_id=creator, channel=channel, role="CREATOR")
-            for user in members:
-                Member.objects.create(user_id=user, channel=channel)
+            Member.objects.create(user=creator, channel=channel, role="CREATOR")
+            for userId in members:
+                Member.objects.create(user_id=userId, channel=channel)
             serializer = self.serializer_class(channel, many=False)
+            # Send ws to all members
+            text_data_json = {
+                "action": "create_channel",
+                "target": "channel",
+                "targetId": channel.id,
+                "data": serializer.data
+            }
+            channel_layer = get_channel_layer()
+            # Send notification to all members who were added to new channel
+            for userId in members:
+                async_to_sync(channel_layer.group_send)(f'user_{userId}', {
+                    "type": "chat.send",
+                    "text_data_json": text_data_json
+                })
             return Response({'message': 'Create channel successfully', 'data': serializer.data})
         except Exception as e:
-            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            channel.delete()
+            return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 
     def getMediaList(self, request, channelId):
@@ -65,16 +105,18 @@ class ChannelViewSet(viewsets.ModelViewSet):
             memberList = channel.members.all()
             serializer = MemberSerializer(memberList, many=True)
             return Response({'message': 'Get member list successfully', 'data': serializer.data})
-        except Exception as e:
+        except Channel.DoesNotExist:
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
-            
 
-    def deleteChannel(self, request, channelId):
+
+    @getMessageListSchema
+    def getMessageList(self, request, channelId):
         try:
             channel = self.queryset.get(pk=channelId)
-            channel.delete()
-            return Response({'message': 'Delete channel successfully'})
-        except Exception as e:
+            messageList = channel.messages.all()
+            serializer = MessageSerializer(messageList, many=True)
+            return Response({'message': 'Get message list successfully', 'data': serializer.data})
+        except:
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
@@ -125,6 +167,7 @@ class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
 
+    # Not necessary
     def deleteMember(self, request, memberId):
         try:
             member = self.queryset.get(pk=memberId)
