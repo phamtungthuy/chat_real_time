@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import Channel, Member
 from user.serializer import UserSerializer
-from message import serializer
 
 class ChannelSerializer(serializers.ModelSerializer):
     member_count = serializers.SerializerMethodField()
@@ -15,8 +14,8 @@ class ChannelSerializer(serializers.ModelSerializer):
         return len(obj.members.all())
 
     def get_last_message(self, obj):
-        last_message = obj.messages.all()[0]
-        messageSerializer = serializer.MessageSerializer(last_message, many=False)
+        last_message = obj.messages.all().first()
+        messageSerializer = message.serializer.MessageSerializer(last_message, many=False)
         return messageSerializer.data
 
     def validate_title(self, value):

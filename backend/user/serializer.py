@@ -31,15 +31,16 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         required_fields = ['username', 'password', 'email', 'first_name', 'last_name']
         if any(key not in validated_data.keys() for key in required_fields):
-            raise ValidationError('Info must be provided fully') 
-        obj = User.objects.create(**validated_data)
-        return obj
+            raise serializers.ValidationError('Info must be provided fully') 
+        user = User.objects.create(**validated_data)
+        UserProfile.objects.create(user=user)
+        return user
 
     def validate_username(self, value):
         if len(value) < 6:
             raise serializers.ValidationError('Username must be at least 6 characters')
-        elif ' ' in value:
-            raise serializers.ValidationError('Username must not contain a blank')
+        elif any(not c.isalnum() for c in value):
+            raise serializers.ValidationError('Username must only include alphabet letters')
         elif User.objects.filter(username=value):
             raise serializers.ValidationError('Username had been used')
         return value
@@ -62,12 +63,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate_first_name(self, value):
         if not value or any(not c.isalpha() for c in value):
-            raise ValueError("First name only includes alphabet letters")
+            raise serializers.ValidationError("First name must only include alphabet letters")
         return value
 
     def validate_last_name(self, value):
         if not value or any(not c.isalpha() for c in value):
-            raise ValueError("Last name only includes alphabet letters")
+            raise serializers.ValidationError("Last name must only include alphabet letters")
         return value
 
 
@@ -75,10 +76,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['user', 'bio', 'avatar_url', 'phone_number', 'address', 'online']
-        extra_kwargs = {
-            'verified': {'write_only': True},
-            'verification_code': {'write_only': True}
-        }
     
     def update(self, instance, validated_data):
         instance.bio = validated_data.get('bio', instance.bio)

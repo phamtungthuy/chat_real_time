@@ -60,7 +60,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     f'group_{channelId}', {"type": "chat.send", "text_data_json": text_data_json}
                 )
         except Exception as e:
-            text_data = json.dumps({"error_message": str(e)})
+            text_data = json.dumps({"error_message": repr(e)})
             # Send error message to user send
             await self.send(text_data=text_data)
 

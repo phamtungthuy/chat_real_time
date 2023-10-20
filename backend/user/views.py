@@ -15,11 +15,8 @@ import uuid
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import json
+from .utils import sendVerificationEmail, resendVerificationEmail
 
-from django.core import mail
-import random
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 
 @extend_schema(tags=['User'])
 class UserViewSet(viewsets.ModelViewSet):
@@ -82,30 +79,18 @@ class UserViewSet(viewsets.ModelViewSet):
     def signup(self, request):
         data = request.data
         serializer = UserSerializer(data=data)
-        if serializer.is_valid():
+        try:
+            serializer.is_valid(raise_exception=True)
             user = serializer.save()
-            # Generate six number verification code
-            verification_code = str(random.randint(0, 999999))
-            while len(verification_code) < 6:
-                verification_code = "0" + verification_code
-            # Create user profile ref to User
-            userProfile = UserProfile.objects.create(user=user, verification_code=verification_code)
-            # Send verification code via user email
-            html_message = render_to_string('email_form.html', {'verification_code': verification_code})
-            plain_message = f"Mã xác thực của bạn: {verification_code}"
-            mail.send_mail(
-                subject="Verification code",
-                from_email='Schat <schatemail.system@gmail.com>',
-                message=plain_message,
-                recipient_list=[user.email],
-                html_message=html_message
-            )
+            sendVerificationEmail(user)
             return Response({"message": "Verification code was sent", "data": serializer.data})
-        message = ""
-        for key, value in serializer.errors.items():
-            message += f'{value[0]} ({key})'
-            break
-        return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+        except serializers.ValidationError as e:
+            message = ""
+            for key, value in serializer.errors.items():
+                message += f'{value[0]} ({key})'
+                break
+            if not message: message = e.args[0]
+            return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     
 
     def resendVerification(self, request):
@@ -114,31 +99,11 @@ class UserViewSet(viewsets.ModelViewSet):
         email = data.get('email')
         try:
             user = User.objects.get(username=username)
-            userProfile = UserProfile.objects.get(user=user)
-            if userProfile.verified:
+            if not resendVerificationEmail(user, email):
                 return Response({'message': 'User has been already verified'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Verification code was resent", 'data': data})
         except User.DoesNotExist:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        # Generate six number verification code
-        verification_code = str(random.randint(0, 999999))
-        while len(verification_code) < 6:
-            verification_code = "0" + verification_code
-        userProfile.verification_code = verification_code
-        userProfile.save()
-        # Send verification code via user email
-        html_message = render_to_string('email_form.html', {'verification_code': verification_code})
-        plain_message = f"Mã xác thực của bạn: {verification_code}"
-        mail.send_mail(
-            subject="Verification code",
-            from_email='Schat <schatemail.system@gmail.com>',
-            message=plain_message,
-            recipient_list=[user.email],
-            html_message=html_message
-        )
-        # Update email
-        user.email = email
-        user.save()
-        return Response({"message": "Verification code was resent", "data": data})
         
 
     def verifyEmail(self, request):
@@ -162,10 +127,14 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
     def login(self, request):
-        username = request.data.get('username')
+        username = request.data.get('username', None)
+        email = request.data.get('email', None)
         password = request.data.get('password')
         try:
-            user = User.objects.get(username=username)
+            if username is not None:
+                user = User.objects.get(username=username)
+            else:
+                user = User.objects.get(email=email)
             if (user.check_password(password)):
                 userProfile = UserProfile.objects.get(user=user)
                 if (userProfile.verified):
@@ -178,9 +147,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 else:
                     return Response({"message": "User was not verified"}, status=status.HTTP_403_FORBIDDEN)
             else:
-                return Response("Password not match")
+                return Response({'message': "Password not match"})
         except User.DoesNotExist:
-            return Response({"message": "Username not match"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "Username or email not match"}, status=status.HTTP_404_NOT_FOUND)
 
 
 
@@ -229,7 +198,6 @@ class UserViewSet(viewsets.ModelViewSet):
             404: OpenApiResponse(response=ResponseSerializer,
                                  description="User not found!")
         }
-        # more customizations
     )
     def deleteUser(self, request, userId=None, username=None):
         try:

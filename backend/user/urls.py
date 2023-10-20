@@ -1,7 +1,14 @@
 from django.urls import path
 from .views import UserViewSet, UserProfileViewSet, FriendViewSet, NotificationViewSet
+from .providerAuth import facebookAuthURL, facebookAuth, googleAuthURL, googleAuth
 
 urlpatterns = [
+    # Authentication
+    path('auth/facebook/', facebookAuthURL),
+    path('auth/facebook/callback/', facebookAuth),
+    path('auth/google/', googleAuthURL),
+    path('auth/google/callback/', googleAuth),
+
     path('signup/', UserViewSet.as_view({
         'post': 'signup',
     })),
@@ -14,6 +21,7 @@ urlpatterns = [
     path('verify/resend/', UserViewSet.as_view({
         'post': 'resendVerification',
     })),
+
     path('channels/', UserViewSet.as_view({
         'get': 'getChannelList',
     })),

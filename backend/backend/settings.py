@@ -4,23 +4,17 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-#SECRET_KEY = 'django-insecure-(ai_@m(dv_hp_sjh$c+==5lx5_3keo-40a83_4lh!o%ow)q^(7'
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
 DEBUG = os.getenv('DEBUG')
 
-ALLOWED_HOSTS = ['*']
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
 
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -43,7 +37,6 @@ INSTALLED_APPS = [
     'user',
     'report',
     'chat',
-    # 'silk'
 ]
 
 MIDDLEWARE = [
@@ -55,7 +48,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'silk.middleware.SilkyMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -77,6 +69,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
+ASGI_APPLICATION = 'backend.asgi.application'
+
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -160,7 +154,6 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-ASGI_APPLICATION = 'backend.asgi.application'
 
 CHANNEL_LAYERS = {
     "default": {
@@ -171,17 +164,14 @@ CHANNEL_LAYERS = {
     },
 }
 
-
 # CONFIG TO UPLOAD AWS S3
 AWS_S3_ACCESS_KEY_ID = os.getenv('AWS_S3_ACCESS_KEY_ID')
 AWS_S3_SECRET_ACCESS_KEY = os.getenv('AWS_S3_SECRET_ACCESS_KEY')
 AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
 AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
-
 AWS_S3_MAX_MEMORY_SIZE = 10000000 # 10MB
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_FILE_OVERWRITE = False
-
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 # STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
 
@@ -192,3 +182,25 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+
+
+# Facebook config
+FACEBOOK_CLIENT_ID = '1049251029439817'
+FACEBOOK_CLIENT_SECRET = 'daf0c2c9c7463d08c5db461341a9827d'
+FACEBOOK_REDIRECT_URI = 'http://localhost:8000/api/user/auth/facebook/callback/'
+
+# Google config
+GOOGLE_CONFIG = {
+    "web": {
+        "client_id":"553464385158-83c4l48cg93tqk36nfcug8c19sscprmi.apps.googleusercontent.com",
+        "project_id":"schat-402309",
+        "auth_uri":"https://accounts.google.com/o/oauth2/auth",
+        "token_uri":"https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
+        "client_secret":"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",
+        "redirect_uris":["http://127.0.0.1:8000/api/auth/google/callback/"],
+        "javascript_origins":["http://127.0.0.1:8000"]
+    }
+}
+
+GOOGLE_REDIRECT_URI = 'http://127.0.0.1:8000/api/user/auth/google/callback/'
