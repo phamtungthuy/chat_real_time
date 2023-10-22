@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    environments {
+    environment {
         scannerHome = tool 'SonarScanner'
         DOCKERHUB = credentials('dockerhub')
         SSH_KEY = credentials('ssh_key')
