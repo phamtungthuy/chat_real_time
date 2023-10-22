@@ -16,23 +16,24 @@ pipeline {
                 }
             }
         }
-        stage('Build') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    sh 'docker compose build'
-                    sh 'echo $DOCKERHUB_PSW | docker login -u $DOCKERHUB_USR --password-stdin'
-                    sh 'docker compose push'
-                }
-            }
-        }
+        // stage('Build') {
+        //     steps {
+        //         timeout(time: 5, unit: 'MINUTES') {
+        //             sh 'docker compose build'
+        //             sh 'echo $DOCKERHUB_PSW | docker login -u $DOCKERHUB_USR --password-stdin'
+        //             sh 'docker compose push'
+        //         }
+        //     }
+        // }
         stage('Deploy') {
             steps {
                 sh '''
                     ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@16.162.46.190 \
-                    "docker compose down --volumes && \
-                    docker compose pull && \
+                    "cd Schat && \
+                    git pull && \
+                    docker compose down --volumes && \
+                    docker compose up --build -d && \
                     echo 'Y' | docker image prune && \
-                    docker compose up -d && \
                     exit"
                 '''
             }
@@ -41,10 +42,6 @@ pipeline {
     post {
         success {
             echo 'Check deployment on http://16.162.46.190:8000'
-        }
-        always {
-            sh 'echo "Y" | docker image prune'
-            sh 'docker logout'
             echo 'See you again!!'
         }
     }
