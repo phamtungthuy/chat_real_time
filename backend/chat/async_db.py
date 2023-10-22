@@ -27,6 +27,7 @@ class ACTION:
     REMOVE_MEMBER = 'remove_member'
     OUT_CHANNEL = 'out_channel'
     CHANGE_CREATOR = 'change_creator'
+    DISBAND_GROUP = 'disband_channel'
     SET_CHANNEL_TITLE = 'set_channel_title'
     SET_NICKNAME = 'set_nickname'
     REMOVE_NICKNAME = 'remove_nickname'
@@ -212,6 +213,24 @@ def changeCreator(user, data):
     oldCreator.save()
     newCreator.role = "CREATOR"
     newCreator.save()
+    return data
+
+
+"""
+text_json_data = {
+    "action": "disband_channel",
+    "target": "channel",
+    "targetId": int,
+    "data": {
+        "channelId": int
+    }
+}
+"""
+@database_sync_to_async
+def disbandChannel(data):
+    channelId = data.get('channelId')
+    channel = Channel.objects.get(pk=channelId)
+    channel.delete()
     return data
 
 

@@ -119,5 +119,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 return await async_db.changeCreator(self.user, data)
             else:
                 raise Exception("User is not creator to perform this action")
-
+        if action == ACTION.DISBAND_CHANNEL:
+            if async_db.isCreator(self.user, targetId):
+                return await async_db.disbandChannel(data)
+            else:
+                raise Exception("User is not creator to perform this action")
         return data
