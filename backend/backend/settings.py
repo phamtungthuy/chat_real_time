@@ -185,19 +185,19 @@ EMAIL_USE_TLS = True
 
 
 # Facebook config
-FACEBOOK_CLIENT_ID = '1049251029439817'
-FACEBOOK_CLIENT_SECRET = 'daf0c2c9c7463d08c5db461341a9827d'
+FACEBOOK_CLIENT_ID = os.getenv('FACEBOOK_CLIENT_ID')
+FACEBOOK_CLIENT_SECRET = os.getenv('FACEBOOK_CLIENT_SECRET')
 FACEBOOK_REDIRECT_URI = 'http://localhost:8000/api/user/auth/facebook/callback/'
 
 # Google config
 GOOGLE_CONFIG = {
     "web": {
-        "client_id":"553464385158-83c4l48cg93tqk36nfcug8c19sscprmi.apps.googleusercontent.com",
+        "client_id": os.getenv('GOOGLE_CLIENT_ID'),
         "project_id":"schat-402309",
         "auth_uri":"https://accounts.google.com/o/oauth2/auth",
         "token_uri":"https://oauth2.googleapis.com/token",
         "auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
-        "client_secret":"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",
+        "client_secret": os.getenv('GOOGLE_CLIENT_SECRET'),
         "redirect_uris":["http://127.0.0.1:8000/api/auth/google/callback/"],
         "javascript_origins":["http://127.0.0.1:8000"]
     }

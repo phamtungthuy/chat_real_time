@@ -32,11 +32,13 @@ def googleAuth(request):
     error = request.GET.get('error', None) 
     if not error:
         google = _get_google()
-        google.fetch_token(authorization_response=request.build_absolute_uri())
-        credentials = google.credentials
-        service = build('oauth2', 'v2', credentials=credentials)
-        user_info = service.userinfo().get().execute()
-        print(user_info)
+        try:
+            google.fetch_token(authorization_response=request.build_absolute_uri())
+            credentials = google.credentials
+            service = build('oauth2', 'v2', credentials=credentials)
+            user_info = service.userinfo().get().execute()
+        except Exception as e:
+            Response({'message': repr(e)}, status=status.HTTP_403_FORBIDDEN)
         validated_data, avatar_url = validateGoogleInfo(user_info)
         serializer = UserSerializer(data=validated_data)
         if serializer.is_valid():
@@ -70,10 +72,13 @@ def facebookAuth(request):
     error = request.GET.get('error', None) 
     if not error:
         facebook = _get_facebook()
-        facebook.fetch_token(authorization_response=request.build_absolute_uri(),
-                            token_url='https://graph.facebook.com/oauth/access_token', 
-                            client_secret=settings.FACEBOOK_CLIENT_SECRET)
-        res = facebook.get('https://graph.facebook.com/me?fields=id,name,email,first_name,last_name,picture.width(640)')
+        try:
+            facebook.fetch_token(authorization_response=request.build_absolute_uri(),
+                                token_url='https://graph.facebook.com/oauth/access_token', 
+                                client_secret=settings.FACEBOOK_CLIENT_SECRET)
+            res = facebook.get('https://graph.facebook.com/me?fields=id,name,email,first_name,last_name,picture.width(640)')
+        except Exception as e:
+            Response({'message': repr(e)}, status=status.HTTP_403_FORBIDDEN)
         user_info = json.loads(res.content.decode())
         validated_data, avatar_url = validateFacebookInfo(user_info)
         serializer = UserSerializer(data=validated_data)
@@ -97,7 +102,6 @@ def facebookAuth(request):
     return Response({'message': error}, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 def validateFacebookInfo(user_info):
     validated_data = {
         'username': _generate_username(user_info['name']),
@@ -119,6 +123,7 @@ def validateGoogleInfo(user_info):
         'last_name': user_info.get('family_name', 'schat'),
     }
     avatar_url = user_info['picture']
+    avatar_url = avatar_url.replace('=s96-c', '=s640-c')
     return validated_data, avatar_url
 
 
@@ -126,7 +131,7 @@ def _generate_username(name):
     name = unidecode.unidecode(name.replace(' ', '')).lower()
     suffix = ""
     if (len(name) < 6):
-        name += '0' * (6 - len(name))
+        name += 'schat'
     while User.objects.filter(username=(f'{name}{suffix}')).exists():
         suffix = random.randint(1, 99)
         if suffix < 10: suffix = f'0{suffix}'

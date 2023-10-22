@@ -40,7 +40,7 @@ class UserSerializer(serializers.ModelSerializer):
         if len(value) < 6:
             raise serializers.ValidationError('Username must be at least 6 characters')
         elif any(not c.isalnum() for c in value):
-            raise serializers.ValidationError('Username must only include alphabet letters')
+            raise serializers.ValidationError('Username must only include alphabet or digit letters')
         elif User.objects.filter(username=value):
             raise serializers.ValidationError('Username had been used')
         return value
@@ -62,13 +62,15 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def validate_first_name(self, value):
-        if not value or any(not c.isalpha() for c in value):
-            raise serializers.ValidationError("First name must only include alphabet letters")
+        value = value.strip().replace('  ', ' ')
+        if not value or any(not (c.isalnum() or c == ' ') for c in value):
+            raise serializers.ValidationError('First name must only include alphabet or digit letters')
         return value
 
     def validate_last_name(self, value):
-        if not value or any(not c.isalpha() for c in value):
-            raise serializers.ValidationError("Last name must only include alphabet letters")
+        value = value.strip().replace('  ', ' ')
+        if not value or any(not (c.isalnum() or c == ' ') for c in value):
+            raise serializers.ValidationError('Last name must only include alphabet or digit letters')
         return value
 
 

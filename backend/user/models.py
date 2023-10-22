@@ -17,6 +17,10 @@ class UserProfile(models.Model):
     address = models.CharField(null=True, max_length=100)
     online = models.BooleanField(default=False)
 
+    def __str__(self):
+        return str(self.user)
+    
+
 class Friend(models.Model):
     user = models.ForeignKey(User, related_name='friends', on_delete=models.CASCADE)
     friend_with = models.ForeignKey(User, on_delete=models.CASCADE)
