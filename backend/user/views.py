@@ -231,7 +231,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = ChannelSerializer(channels, many=True)
         return Response({'message': 'Get channel list successfully', 'data': serializer.data})
 
-
+@extend_schema(tags=['User Profile'])
 class UserProfileViewSet(viewsets.ViewSet):
     query_set = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
@@ -297,6 +297,7 @@ class UserProfileViewSet(viewsets.ViewSet):
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=['Friend'])
 class FriendViewSet(viewsets.ViewSet):
     query_set = Friend.objects.all()
     serializer_class = FriendSerializer
@@ -317,7 +318,7 @@ class FriendViewSet(viewsets.ViewSet):
         except Friend.DoesNotExist:
             return Response({"message": "Friend not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
+@extend_schema(tags=['Notification'])
 class NotificationViewSet(viewsets.ViewSet):
     query_set = Notification.objects.all()
     serializer_class = NotificationSerializer

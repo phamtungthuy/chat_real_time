@@ -3,7 +3,9 @@ from rest_framework import viewsets, status
 from .models import Report
 from .serializer import ReportSerializer
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from drf_spectacular.utils import extend_schema
 
+@extend_schema(tags=['Report'])
 class ReportViewSet(viewsets.ViewSet):
     query_set = Report.objects.all()
     serializer_class = ReportSerializer

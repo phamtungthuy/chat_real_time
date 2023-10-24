@@ -12,8 +12,10 @@ from storages.backends.s3boto3 import S3Boto3Storage
 import uuid
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from drf_spectacular.utils import extend_schema
 import json
 
+@extend_schema(tags=['Channel'])
 class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()
     serializer_class = ChannelSerializer
@@ -162,7 +164,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
             
-
+@extend_schema(tags=['Member', 'Channel'])
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
