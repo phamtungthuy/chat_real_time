@@ -14,6 +14,9 @@ class Message(models.Model):
     reply = models.ForeignKey("Message", null=True, blank=True, on_delete=models.DO_NOTHING)
     create_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return f'{self.channel.id}_{self.content}'
 

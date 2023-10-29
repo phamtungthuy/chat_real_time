@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from .models import Message, Emoji, Reaction
-from channel.serializer import MemberSerializer
+import channel.serializer
+
 
 class MessageSerializer(serializers.ModelSerializer):
-    member = MemberSerializer()
+    member = channel.serializer.MemberSerializer()
 
     class Meta:
         model = Message

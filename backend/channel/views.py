@@ -3,29 +3,30 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from drf_spectacular.utils import extend_schema
 from .models import Channel, Member
-from .schema import *
+from backend.pagination import MessagePagination
 from .serializer import ChannelSerializer,MemberSerializer
 from message.serializer import MessageSerializer
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from django.contrib.auth.models import User
 from storages.backends.s3boto3 import S3Boto3Storage
-import uuid
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from drf_spectacular.utils import extend_schema
-import json
+import json, uuid
+from .schema import *
+
 
 @extend_schema(tags=['Channel'])
 class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()
     serializer_class = ChannelSerializer
+    pagination_class = MessagePagination
 
     def get_permissions(self):
         admin_actions = ['getAllChannels', 'deleteChannel']
         if self.action in admin_actions:
             permission_classes = [IsAdminUser]
         else:
-            permission_classes = [IsAuthenticated]
+            permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
 
 
@@ -116,9 +117,12 @@ class ChannelViewSet(viewsets.ModelViewSet):
         try:
             channel = self.queryset.get(pk=channelId)
             messageList = channel.messages.all()
+            messageList = self.paginate_queryset(messageList)
             serializer = MessageSerializer(messageList, many=True)
-            return Response({'message': 'Get message list successfully', 'data': serializer.data})
-        except:
+            return self.get_paginated_response({'message': 'Get message list successfully', 'data': serializer.data})
+            # return Response({'message': 'Get message list successfully', 'data': serializer.data})
+        except Exception as e:
+            print(repr(e))
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
 

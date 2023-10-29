@@ -8,16 +8,15 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .schema import *
 from drf_spectacular.utils import extend_schema
 from storages.backends.s3boto3 import S3Boto3Storage
-import uuid
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-import json
+import json, uuid
 
 
 @extend_schema(tags=['Message'])
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     serializer_class = MessageSerializer
 
     @createMessageSchema
