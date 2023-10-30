@@ -24,7 +24,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
    
     def get_permissions(self):
-        admin_actions = ['getAllUsers', 'deleteUser']
+        admin_actions = ['getAllUsers', 'banUser']
         if self.action == 'retrieve':
             permission_classes = [IsAuthenticated]
         elif self.action in admin_actions:
@@ -137,15 +137,18 @@ class UserViewSet(viewsets.ModelViewSet):
                 user = User.objects.get(email=email)
             if (user.check_password(password)):
                 userProfile = UserProfile.objects.get(user=user)
-                if (userProfile.verified):
-                    refresh = RefreshToken.for_user(user)
-                    token = {
-                        'refresh': str(refresh),
-                        'access': str(refresh.access_token)
-                    }
-                    return Response({"message": "Login successfully", "data": token})
+                if user.is_active:
+                    if (userProfile.verified):
+                        refresh = RefreshToken.for_user(user)
+                        token = {
+                            'refresh': str(refresh),
+                            'access': str(refresh.access_token)
+                        }
+                        return Response({"message": "Login successfully", "data": token})
+                    else:
+                        return Response({"message": "User has not been verified"}, status=status.HTTP_401_UNAUTHORIZED)
                 else:
-                    return Response({"message": "User was not verified"}, status=status.HTTP_403_FORBIDDEN)
+                    return Response({"message": "User has been banned"}, status=status.HTTP_403_FORBIDDEN)
             else:
                 return Response({'message': "Password not match"})
         except User.DoesNotExist:
@@ -199,18 +202,15 @@ class UserViewSet(viewsets.ModelViewSet):
                                  description="User not found!")
         }
     )
-    def deleteUser(self, request, userId=None, username=None):
+    def banUser(self, request, userId):
         try:
-            if id is None:
-                user = User.objects.get(username=username)
-            else:
-                user = User.objects.get(pk=userId)
+            user = User.objects.get(pk=userId)
             text_data_json = {
-                "action": "delete_user",
+                "action": "ban_user",
                 "target": "user",
                 "targetId": user.id,
                 "data": {
-                    "message": "Your account has been deleted by admin"
+                    "message": "Your account has been banned by admin"
                 }
             }
             channel_layer = get_channel_layer()
@@ -218,10 +218,11 @@ class UserViewSet(viewsets.ModelViewSet):
                 "type": "chat.send",
                 "text_data_json": text_data_json
             })
-            user.delete()
+            user.is_active = False
+            user.save()
+            return Response({'message': 'Banned user successfully'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        return Response({'message': 'Delete user successfully'}, status=status.HTTP_200_OK)
     
     
     def getChannelList(self, request):

@@ -12,10 +12,3 @@ services:
       - 8000:8000
     volumes:
       - ./backend:/app
-
-  # redis:
-  #   image: chat_real_time:redis
-  #   build:
-  #     context: ./redis
-  #     dockerfile: Dockerfile
-  #   command: 'redis-server /usr/local/etc/redis/redis.conf'

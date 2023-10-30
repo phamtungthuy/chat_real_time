@@ -21,6 +21,9 @@ urlpatterns = [
     path('verify/resend/', UserViewSet.as_view({
         'post': 'resendVerification',
     })),
+    path('ban/<int:userId>/', UserViewSet.as_view({
+        'get': 'banUser'
+    })),
 
     path('channels/', UserViewSet.as_view({
         'get': 'getChannelList',
@@ -28,6 +31,7 @@ urlpatterns = [
     path('all/', UserViewSet.as_view({
         'get': 'getAllUsers',
     })),
+    
     # path('<int:userId>/', UserViewSet.as_view({
     #     'get': 'retrieve',
     #     'put': 'update',
