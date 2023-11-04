@@ -6,7 +6,7 @@ from .serializer import UserSerializer, FriendSerializer, UserProfileSerializer,
 from django.contrib.auth.models import User
 from user.models import UserProfile, Friend, Notification
 from channel.serializer import ChannelSerializer
-from .response import ResponseSerializer, SuccessResponseSerializer
+from .schema import *
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.db.models import Q
@@ -60,22 +60,7 @@ class UserViewSet(viewsets.ModelViewSet):
     #         return Response({'message': f'User not found'}, status=status.HTTP_404_NOT_FOUND)
     #     return Response({'message': 'Successfully',
     #                      'data': serializer.data}, status=status.HTTP_200_OK)
-    
-    @extend_schema(
-        request={
-            "multipart/form-data": {
-                "type": "object",
-                "properties": {
-                    "username": {"type": "string", "required": True},
-                    "password": {"type": "string"},
-                    "email": {"type": "string"}},
-            },
-        },
-        responses = {
-            200: OpenApiResponse(response=SuccessResponseSerializer, description='Operations successfully'),
-            400: OpenApiResponse(response=ResponseSerializer, description='Bad Request')
-        }
-    )
+    @signUpSchema
     def signup(self, request):
         data = request.data
         serializer = UserSerializer(data=data)
@@ -92,7 +77,7 @@ class UserViewSet(viewsets.ModelViewSet):
             if not message: message = e.args[0]
             return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     
-
+    @resendVerificationSchema
     def resendVerification(self, request):
         data = request.data
         username = data.get('username')
@@ -105,7 +90,7 @@ class UserViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         
-
+    @verifyEmailSchema
     def verifyEmail(self, request):
         data = request.data
         username = data.get('username')
@@ -123,9 +108,10 @@ class UserViewSet(viewsets.ModelViewSet):
             userProfile.save()
             return Response({"message": "User has been verified successfully"})
         else: 
-            return Response({"message": "Verification code not correct"})
+            return Response({"message": "Verification code not correct"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+    @loginSchema
     def login(self, request):
         username = request.data.get('username', None)
         email = request.data.get('email', None)
@@ -194,14 +180,14 @@ class UserViewSet(viewsets.ModelViewSet):
     #     return Response({'message': 'Error when updating'}, status=status.HTTP_400_BAD_REQUEST)
     
 
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(response=SuccessResponseSerializer,
-                                 description="Operations successfully"),
-            404: OpenApiResponse(response=ResponseSerializer,
-                                 description="User not found!")
-        }
-    )
+    # @extend_schema(
+    #     responses={
+    #         200: OpenApiResponse(response=SuccessResponseSerializer,
+    #                              description="Operations successfully"),
+    #         404: OpenApiResponse(response=ResponseSerializer,
+    #                              description="User not found!")
+    #     }
+    # )
     def banUser(self, request, userId):
         try:
             user = User.objects.get(pk=userId)

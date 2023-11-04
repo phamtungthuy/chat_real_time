@@ -57,17 +57,17 @@ class ChannelViewSet(viewsets.ModelViewSet):
         except Channel.DoesNotExist:
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
-
+    @createChannelSchema
     def createChannel(self, request):
         data = request.data
         creator = request.user
         title = data.get('title')
         members = data.get('members')
-
         if len(members) < 3:
             return Response({"message": "A channel needs at least three members"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             channel = self.queryset.create(title=title)
+            print(123)
             Member.objects.create(user=creator, channel=channel, role="CREATOR")
             for userId in members:
                 Member.objects.create(user_id=userId, channel=channel)
