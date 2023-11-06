@@ -25,7 +25,8 @@ class UserViewSet(viewsets.ModelViewSet):
    
     def get_permissions(self):
         admin_actions = ['getAllUsers', 'banUser']
-        if self.action == 'retrieve':
+        authenticate_actions = ['retrieve', 'getChannelList']
+        if self.action in authenticate_actions:
             permission_classes = [IsAuthenticated]
         elif self.action in admin_actions:
             permission_classes = [IsAdminUser]
@@ -33,7 +34,7 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
 
-
+    @getAllUsersSchema
     def getAllUsers(self, request):
         users = self.queryset
         serializer = self.serializer_class(users, many=True)
@@ -188,6 +189,7 @@ class UserViewSet(viewsets.ModelViewSet):
     #                              description="User not found!")
     #     }
     # )
+    @banUserSchema
     def banUser(self, request, userId):
         try:
             user = User.objects.get(pk=userId)
@@ -210,7 +212,7 @@ class UserViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    
+    @getChannelListSchema
     def getChannelList(self, request):
         user = request.user
         members = user.members.all()

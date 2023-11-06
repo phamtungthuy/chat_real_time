@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from drf_spectacular.utils import inline_serializer
 from .serializer import *
+from channel.serializer import ChannelSerializer
 
 class ResendVerificationSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -40,3 +41,11 @@ class SuccessUserLoginSerializer(serializers.Serializer):
 class SuccessResendVerificationCode(serializers.Serializer):
     message =serializers.CharField()
     data = ResendVerificationSerializer()
+
+class SuccessGetAllUsersSerializer(serializers.Serializer):
+    message =serializers.CharField()
+    data = UserResponseSerializer(many=True)
+
+class SuccessGetChannelListSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    data = ChannelSerializer(many=True)

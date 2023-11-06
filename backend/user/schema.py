@@ -41,3 +41,32 @@ resendVerificationSchema = extend_schema(
         404: OpenApiResponse(response=GeneralMessageSerializer, description="User not found")
     }
 )
+
+getAllUsersSchema = extend_schema(
+    summary="Get All Users if have permission",
+    description="If you want to get all users, you need permission, normal users can not get information of all users",
+    responses = {
+        200: OpenApiResponse(response=SuccessGetAllUsersSerializer, description="Get all users successfully"),
+        401: OpenApiResponse(response=GeneralMessageSerializer, description="You need to be authorized before making this action"),
+        403: OpenApiResponse(response=GeneralMessageSerializer, description="You don't have permission to get all users")
+    }
+)
+
+banUserSchema = extend_schema(
+    summary="Ban user if have permission",
+    description="You need permission to ban users, normal users can not ban users",
+    responses = {
+        200: OpenApiResponse(response=GeneralMessageSerializer, description="User is banned"),
+        401: OpenApiResponse(response=GeneralMessageSerializer, description="You need to be authorized before making this action"),
+        403: OpenApiResponse(response=GeneralMessageSerializer, description="You don't have permission to ban users")
+    }
+)
+
+getChannelListSchema = extend_schema(
+    summary="Get all channels which current user are joining in",
+    description="You need authentication token to get all channels",
+    responses = {
+        200: OpenApiResponse(response=SuccessGetChannelListSerializer, description="get all joined channels successfully"),
+        401: OpenApiResponse(response=GeneralMessageSerializer, description="You need to be authorized before making this action"),
+    }
+)
