@@ -17,7 +17,6 @@ from asgiref.sync import async_to_sync
 import json
 from .utils import sendVerificationEmail, resendVerificationEmail
 
-
 @extend_schema(tags=['User'])
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -226,6 +225,7 @@ class UserProfileViewSet(viewsets.ViewSet):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
+    @getUserProfileSchema
     def getUserProfile(self, request, userId):
         try:
             user = request.user
@@ -244,7 +244,7 @@ class UserProfileViewSet(viewsets.ViewSet):
         except UserProfile.DoesNotExist:
             return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
+    @updateUserProfileSchema
     def updateUserProfile(self, request):
         user = request.user
         data = request.data
@@ -259,9 +259,10 @@ class UserProfileViewSet(viewsets.ViewSet):
             break
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
-
+    @uploadUserAvatarSchema
     def uploadUserAvatar(self, request):
         file_obj = request.FILES.get('file')
+        print(request.FILES)
         # Validate file
         if file_obj is None:
             return Response({"message": "File not provided"}, status=status.HTTP_400_BAD_REQUEST) 
@@ -292,12 +293,14 @@ class FriendViewSet(viewsets.ViewSet):
     serializer_class = FriendSerializer
     permission_classes = [IsAuthenticated]
 
+    @getFriendListSchema
     def getFriendList(self, request):
         user = request.user
         friendList = user.friends.all()
         serializer = self.serializer_class(friendList, many=True)
         return Response({'message': 'Get friend list successfully', 'data': serializer.data})
 
+    @deleteFriendSchema
     def deleteFriend(self, request, friendId):
         user = request.user
         try:
@@ -313,6 +316,7 @@ class NotificationViewSet(viewsets.ViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
 
+    @getNotificationListSchema
     def getNotificationList(self, request):
         user = request.user
         notificationList = user.notifications.all()
