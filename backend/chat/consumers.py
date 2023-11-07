@@ -34,7 +34,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Change offline status
         await async_db.setOfflineUser(self.user)
         # Leave all chat group
-        channels = await async_db.setOnlineUser(self.user)
+        channels = await async_db.getUserChannels(self.user)
         if channels is not None:
             for channel in channels:
                 group_name = f'group_{channel.id}'
@@ -119,3 +119,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 return await async_db.changeCreator(self.user, data)
             else:
                 raise Exception("User is not creator to perform this action")
+
+        return data

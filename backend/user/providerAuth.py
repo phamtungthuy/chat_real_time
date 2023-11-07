@@ -7,6 +7,8 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from .serializer import UserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema
+
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
@@ -17,9 +19,11 @@ from requests_oauthlib.compliance_fixes import facebook_compliance_fix
 
 import requests, json, unidecode, random, uuid
 
-
 # Google Oauth 2.0 server https://accounts.google.com/o/oauth2/v2/auth
 # Google exchange token https://oauth2.googleapis.com/token
+
+
+@extend_schema(tags=['Oauth2'])
 @api_view(['GET'])
 def googleAuthURL(request):
     google = _get_google()
@@ -27,6 +31,8 @@ def googleAuthURL(request):
         access_type='offline', include_granted_scopes='false')
     return redirect(authorization_url)
 
+
+@extend_schema(tags=['Oauth2'])
 @api_view(['GET'])
 def googleAuth(request):
     error = request.GET.get('error', None) 
@@ -60,6 +66,8 @@ def googleAuth(request):
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     return Response({'message': error}, status=status.HTTP_400_BAD_REQUEST)
 
+
+@extend_schema(tags=['Oauth2'])
 @api_view(['GET'])
 def facebookAuthURL(request):
     facebook = _get_facebook()
@@ -67,6 +75,8 @@ def facebookAuthURL(request):
     authorization_url, state = facebook.authorization_url(authorization_base_url)
     return redirect(authorization_url)
 
+
+@extend_schema(tags=['Oauth2'])
 @api_view(['GET'])
 def facebookAuth(request):
     error = request.GET.get('error', None) 
