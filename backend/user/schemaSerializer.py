@@ -2,7 +2,6 @@ from rest_framework import serializers
 from drf_spectacular.utils import inline_serializer
 from .serializer import *
 from channel.serializer import ChannelSerializer
-from django import forms
 
 class ResendVerificationSerializer(serializers.Serializer):
     username = serializers.CharField()

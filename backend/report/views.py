@@ -4,12 +4,13 @@ from .models import Report
 from .serializer import ReportSerializer
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from drf_spectacular.utils import extend_schema
+from .schema import *
 
 @extend_schema(tags=['Report'])
 class ReportViewSet(viewsets.ViewSet):
     query_set = Report.objects.all()
     serializer_class = ReportSerializer
-
+    
     def get_permissions(self):
         if self.action == 'createReport':
             permission_classes = [IsAuthenticated]
@@ -17,19 +18,21 @@ class ReportViewSet(viewsets.ViewSet):
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
 
-
+    @getReportedChannelSchema
     def getReportedChannel(self, request):
         reportedChannels = self.query_set.filter(report_type="REPORT_CHANNEL")
         serializer = self.serializer_class(reportedChannels, many=True)
         return Response({"message": "Get reported channels successfully", "data": serializer.data})
 
 
+    @getReportedUserSchema
     def getReportedUser(self, request):
         reportedUsers = self.query_set.filter(report_type="REPORT_USER")
         serializer = self.serializer_class(reportedUsers, many=True)
         return Response({"message": "Get reported users successfully", "data": serializer.data})
 
 
+    @createReportSchema
     def createReport(self, request):
         data = request.data.copy()
         data['reporter'] = request.user.id
@@ -44,6 +47,7 @@ class ReportViewSet(viewsets.ViewSet):
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
 
+    @getReportDetailSchema
     def getReportDetail(self, request, reportId):
         try:
             report = self.query_set.get(pk=reportId)
@@ -52,7 +56,7 @@ class ReportViewSet(viewsets.ViewSet):
         except:
             return Response({"message": "Report not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
+    @processReportSchema
     def processReport(self, request, reportId):
         try:
             report = self.query_set.get(pk=reportId)
@@ -62,7 +66,7 @@ class ReportViewSet(viewsets.ViewSet):
         except:
             return Response({"message": "Report not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
+    @deleteReportSchema
     def deleteReport(self, request, reportId):
         try:
             report = self.query_set.get(pk=reportId)

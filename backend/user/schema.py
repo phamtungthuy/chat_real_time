@@ -73,7 +73,7 @@ getChannelListSchema = extend_schema(
 
 getUserProfileSchema = extend_schema(
     summary="Get detail information of a user",
-    description="You need authentication token of current user to get user's profile \n \
+    description="You need authentication token of current user to get user's profile \n\n \
     You can access to profile of almost all users except for special users such as admins",
     responses = {
         200: OpenApiResponse(response=SuccessGetUserProfileSerializer, description="Get a particular user profile successfully"),
