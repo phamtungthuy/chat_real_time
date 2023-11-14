@@ -45,13 +45,14 @@ urlpatterns = [
     
     # UserProflieViewSet
     path('profile/', UserProfileViewSet.as_view({
+        'get': 'getSelfProfile',
         'put': 'updateUserProfile',
+    })),
+        path('<int:userId>/profile', UserProfileViewSet.as_view({
+        'get': 'getUserProfile',
     })),
     path('profile/avatar/', UserProfileViewSet.as_view({
         'put': 'uploadUserAvatar',
-    })),
-    path('<int:userId>/profile', UserProfileViewSet.as_view({
-        'get': 'getUserProfile',
     })),
 
     # FriendViewSet

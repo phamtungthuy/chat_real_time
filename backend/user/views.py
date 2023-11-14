@@ -244,6 +244,16 @@ class UserProfileViewSet(viewsets.ViewSet):
         except UserProfile.DoesNotExist:
             return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    @getSelfProfileSchema
+    def getSelfProfile(self, request):
+        try:
+            user = request.user
+            userProfile = self.query_set.get(user=user)
+            serializer = self.serializer_class(userProfile, many=False)
+            return Response({"message": "Get self profile successfully", "data": serializer.data})
+        except UserProfile.DoesNotExist:
+            return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
     @updateUserProfileSchema
     def updateUserProfile(self, request):
         user = request.user

@@ -82,6 +82,15 @@ getUserProfileSchema = extend_schema(
     }
 )
 
+getSelfProfileSchema = extend_schema(
+    summary="Get detail information of yourself",
+    description="You need authentication token of current account to get your profile",
+    responses = {
+        200: OpenApiResponse(response=SuccessGetUserProfileSerializer, description="Get your profile successfully"),
+        404: OpenApiResponse(response=GeneralMessageSerializer, description="User profile not found")
+    }
+)
+
 updateUserProfileSchema = extend_schema(
     summary = "Update current user's profile information",
     description ="You need authentication token of current user to update profile",
