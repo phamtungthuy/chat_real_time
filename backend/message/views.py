@@ -33,6 +33,7 @@ class MessageViewSet(viewsets.ModelViewSet):
                 break
             return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
+    @uploadImageSchema
     def uploadImage(self, request):
         file_list = request.FILES.getlist('file')
         # Check whether file is empty
