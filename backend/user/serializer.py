@@ -33,7 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
         if any(key not in validated_data.keys() for key in required_fields):
             raise serializers.ValidationError('Info must be provided fully') 
         user = User.objects.create(**validated_data)
-        UserProfile.objects.create(user=user)
+        UserProfile.objects.create(user=user, avatar_url="https://www.google.com/search?q=anonymous+avatar&sca_esv=582289591&tbm=isch&source=lnms&sa=X&ved=2ahUKEwj62uWn6MOCAxWT1TQHHSlpAR4Q_AUoAXoECAEQAw&biw=2191&bih=1114&dpr=1.17#imgrc=34bQconw0W1WaM")
         return user
 
     def validate_username(self, value):
@@ -75,10 +75,16 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
     class Meta:
         model = UserProfile
         fields = ['user', 'bio', 'avatar_url', 'phone_number', 'address', 'online']
     
+    def get_user(self, obj):
+        serializer = UserSerializer(obj.user, many=False)
+        return serializer.get()
+
     def update(self, instance, validated_data):
         instance.bio = validated_data.get('bio', instance.bio)
         instance.phone_number = validated_data.get('phone_number', instance.phone_number)
