@@ -16,6 +16,8 @@ os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS=['http://16.162.46.190', 'http://16.162.46.190:8000']
+
 # Application definition
 
 INSTALLED_APPS = [
