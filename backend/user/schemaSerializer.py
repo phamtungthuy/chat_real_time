@@ -26,7 +26,15 @@ class UserWithoutEmailSerializer(UserResponseSerializer):
         fields = ['id', 'username', 'avatar_url', 
                   'first_name', 'last_name', 'fullname']
         
-        
+
+class UpdateProfileSerializer(UserProfileSerializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+
+    class Meta:
+        model = UserProfile
+        fields = ['bio', 'avatar_url', 'phone_number', 'address', 'first_name', 'last_name']
+
 class GeneralMessageSerializer(serializers.Serializer):
     message = serializers.CharField()
     

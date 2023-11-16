@@ -24,7 +24,7 @@ class UserViewSet(viewsets.ModelViewSet):
    
     def get_permissions(self):
         admin_actions = ['getAllUsers', 'banUser']
-        authenticate_actions = ['retrieve', 'getChannelList']
+        authenticate_actions = ['retrieveUser', 'getChannelList']
         if self.action in authenticate_actions:
             permission_classes = [IsAuthenticated]
         elif self.action in admin_actions:
@@ -33,6 +33,7 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
 
+
     @getAllUsersSchema
     def getAllUsers(self, request):
         users = self.queryset
@@ -40,26 +41,16 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({"message": "Get all users successfully", "data": serializer.data})
 
 
-    # @extend_schema(
-    #     responses={
-    #         200: OpenApiResponse(response=SuccessResponseSerializer,
-    #                              description="Operations successfully"),
-    #         404: OpenApiResponse(response=ResponseSerializer,
-    #                              description="User not found!")
-    #     }
-    #     # more customizations
-    # )
-    # def retrieve(self, request, id=None, username=None):
-    #     try:
-    #         if id is None:
-    #             user = User.objects.get(username=username)
-    #         else:
-    #             user = User.objects.get(id=id)
-    #         serializer = UserSerializer(user)
-    #     except User.DoesNotExist:
-    #         return Response({'message': f'User not found'}, status=status.HTTP_404_NOT_FOUND)
-    #     return Response({'message': 'Successfully',
-    #                      'data': serializer.data}, status=status.HTTP_200_OK)
+    @retrieveUserSchema
+    def retrieveUser(self, request):
+        try:
+            user = request.user
+            serializer = self.serializer_class(user, many=False)
+            return Response({'message': 'Get user successfully', 'data': serializer.data}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+
     @signUpSchema
     def signup(self, request):
         data = request.data
@@ -259,12 +250,18 @@ class UserProfileViewSet(viewsets.ViewSet):
         user = request.user
         data = request.data
         userProfile = self.query_set.get(user=user)
-        serializer = UserProfileSerializer(instance=userProfile, data=data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Update user profile successfuly', "data": serializer.data})
+        profileSerializer = self.serializer_class(instance=userProfile, data=data, partial=True)
+        userSerializer = UserSerializer(instance=user, data=data, partial=True)
+        if userSerializer.is_valid() and profileSerializer.is_valid():
+            userSerializer.save()
+            profileSerializer.save()
+            return Response({'message': 'Update user profile successfuly', "data": profileSerializer.data})
         message = ""
-        for key, value in serializer.errors.items():
+        if userSerializer.errors:
+            errors = userSerializer.errors
+        else:
+            errors = profileSerializer.errors
+        for key, value in errors.items():
             message += f'{value[0]} ({key})'
             break
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)

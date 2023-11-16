@@ -9,6 +9,10 @@ urlpatterns = [
     path('auth/google/', googleAuthURL),
     path('auth/google/callback/', googleAuth),
 
+
+    path('', UserViewSet.as_view({
+        'get': 'retrieveUser'
+    })),
     path('signup/', UserViewSet.as_view({
         'post': 'signup',
     })),

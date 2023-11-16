@@ -23,10 +23,17 @@ class UserSerializer(serializers.ModelSerializer):
         data['fullname'] = f'{instance.first_name} {instance.last_name}'
         return data
 
+    def update(self, instance, validated_data):
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.save()
+        return instance
+
     def get(self):
         data = self.data
-        data.pop('email')
+        data.pop('email', None)
         return data
+
 
     def create(self, validated_data):
         required_fields = ['username', 'password', 'email', 'first_name', 'last_name']
@@ -83,7 +90,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     def get_user(self, obj):
         serializer = UserSerializer(obj.user, many=False)
-        return serializer.get()
+        userData = serializer.get()
+        userData.pop('avatar_url', None)
+        return userData
 
     def update(self, instance, validated_data):
         instance.bio = validated_data.get('bio', instance.bio)

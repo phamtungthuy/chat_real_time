@@ -2,6 +2,19 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_seriali
 from message.serializer import MessageSerializer
 from .serializer import UserSerializer
 from .schemaSerializer import *
+
+
+retrieveUserSchema = extend_schema(
+    summary="Get user info, include username, firstname, lastname, email, avatar_url",
+    responses={
+            200: OpenApiResponse(response=UserResponseSerializer,
+                                 description="Operations successfully"),
+            404: OpenApiResponse(response=GeneralMessageSerializer,
+                                 description="User not found!")
+        }
+)
+
+
 signUpSchema = extend_schema(
     summary="Sign up a new user account",
     request=UserSerializer,
@@ -94,7 +107,7 @@ getSelfProfileSchema = extend_schema(
 updateUserProfileSchema = extend_schema(
     summary = "Update current user's profile information",
     description ="You need authentication token of current user to update profile",
-    request=UserProfileSerializer,
+    request=UpdateProfileSerializer,
     responses= {
         200: OpenApiResponse(response = SuccessUpdateUserProfileSerializer, description="Update user profile successfully"),
         401: OpenApiResponse(response=GeneralMessageSerializer, description="You need provide authentication token to make this action"),
