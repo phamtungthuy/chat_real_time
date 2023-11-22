@@ -12,7 +12,7 @@ class UserProfile(models.Model):
     verified = models.BooleanField(default=False)
     verification_code = models.CharField(null=True, max_length=10)
     bio = models.CharField(null=True, max_length=100)
-    avatar_url = models.CharField(null=True, max_length=128)
+    avatar_url = models.CharField(null=True, max_length=512)
     phone_number = models.CharField(null=True, max_length=15)
     address = models.CharField(null=True, max_length=100)
     online = models.BooleanField(default=False)

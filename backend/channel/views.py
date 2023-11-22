@@ -15,6 +15,7 @@ import json, uuid
 from .schema import *
 
 
+
 @extend_schema(tags=['Channel'])
 class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()
@@ -29,13 +30,13 @@ class ChannelViewSet(viewsets.ModelViewSet):
             permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
 
-
+    @getAllChannelsSchema
     def getAllChannels(self, request):
         channels = self.queryset
         serializer = self.serializer_class(channels, many=True)
         return Response({"message": "Get all channels successfully", "data": serializer.data})
 
-
+    @deleteChannelSchema
     def deleteChannel(self, request, channelId):
         try:
             channel = self.queryset.get(pk=channelId)
@@ -67,7 +68,6 @@ class ChannelViewSet(viewsets.ModelViewSet):
             return Response({"message": "A channel needs at least three members"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             channel = self.queryset.create(title=title)
-            print(123)
             Member.objects.create(user=creator, channel=channel, role="CREATOR")
             for userId in members:
                 Member.objects.create(user_id=userId, channel=channel)
@@ -92,6 +92,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 
+    @getMediaListSchema
     def getMediaList(self, request, channelId):
         try:
             channel = self.queryset.get(pk=channelId)
@@ -102,6 +103,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
+    @getMemberListSchema
     def getMemberList(self, request, channelId):
         try:
             channel = self.queryset.get(pk=channelId)
@@ -126,6 +128,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
+    @uploadChannelAvatarSchema
     def uploadChannelAvatar(self, request):
         file_obj = request.FILES.get('file')
         # Validate file
