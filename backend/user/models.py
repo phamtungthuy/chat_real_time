@@ -1,11 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import User
 from channel.models import Channel
+from django_rest_passwordreset.signals import reset_password_token_created
+from django.dispatch import receiver
+from .utils import sendForgetPasswordEmail
 
 NOTIFICATION_TYPE = (
     ("FRIEND_REQUEST", "friend_request"),
     ("FRIEND_ACCEPT", "friend_accept"),
 )
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, related_name='profile', on_delete=models.CASCADE)
@@ -19,6 +23,10 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return str(self.user)
+    
+    @receiver(reset_password_token_created)
+    def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
+        sendForgetPasswordEmail(reset_password_token)
     
 
 class Friend(models.Model):
