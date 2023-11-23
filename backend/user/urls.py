@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import UserViewSet, UserProfileViewSet, FriendViewSet, NotificationViewSet
 from .providerAuth import facebookAuthURL, facebookAuth, googleAuthURL, googleAuth
-
+from .passwordToken import *
 urlpatterns = [
     # Authentication
     path('auth/facebook/', facebookAuthURL),
@@ -70,5 +70,17 @@ urlpatterns = [
     # NotificationViewSet
     path('notifications/', NotificationViewSet.as_view({
         'get': 'getNotificationList'
-    }))
+    })),
+    path('passwordreset/', 
+         CustomResetPasswordRequestTokenViewSet.as_view({
+            'post': 'create'     
+        })),
+    path('passwordreset/confirm/', 
+         CustomResetPasswordConfirmViewSet.as_view({
+            'post': 'create'     
+        })),
+    path('passwordreset/validate/', 
+         CustomResetPasswordValidateTokenViewSet.as_view({
+            'post': 'create'     
+        }))
 ]
