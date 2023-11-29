@@ -10,11 +10,10 @@ NOTIFICATION_TYPE = (
     ("FRIEND_ACCEPT", "friend_accept"),
 )
 
-
 class UserProfile(models.Model):
     user = models.OneToOneField(User, related_name='profile', on_delete=models.CASCADE)
     verified = models.BooleanField(default=False)
-    verification_code = models.CharField(null=True, max_length=10)
+    verification_code = models.CharField(null=True, max_length=128)
     bio = models.CharField(null=True, max_length=100)
     avatar_url = models.CharField(null=True, max_length=512)
     phone_number = models.CharField(null=True, max_length=15)

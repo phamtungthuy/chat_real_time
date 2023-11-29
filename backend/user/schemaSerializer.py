@@ -42,8 +42,7 @@ class SuccessSignUpSerializer(serializers.Serializer):
     message = serializers.CharField()
     data = UserResponseSerializer()
     
-class verifyEmailSerializer(serializers.Serializer):
-    username = serializers.CharField()
+class VerifyEmailSerializer(serializers.Serializer):
     verification_code = serializers.CharField(max_length=10)
     
 class TokenDataSerializer(serializers.Serializer):
@@ -93,3 +92,10 @@ class SuccessGetFriendListSerializer(serializers.Serializer):
 class SuccessGetNotificationListSerializer(serializers.Serializer):
     message = serializers.CharField()
     data = NotificationSerializer(many = True)
+
+class ChangePasswordSerializer(serializers.Serializer):
+    oldPassword = serializers.CharField()
+    newPassword = serializers.CharField()
+
+class ChangeEmailSerializer(serializers.Serializer):
+    newEmail = serializers.EmailField()

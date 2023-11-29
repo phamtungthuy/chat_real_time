@@ -11,10 +11,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
-import uuid
+import uuid, json, base64
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-import json
 from .utils import sendVerificationEmail, resendVerificationEmail
 
 @extend_schema(tags=['User'])
@@ -58,7 +57,7 @@ class UserViewSet(viewsets.ModelViewSet):
         try:
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
-            sendVerificationEmail(user)
+            sendVerificationEmail(user. user.email)
             return Response({"message": "Verification code was sent", "data": serializer.data})
         except serializers.ValidationError as e:
             message = ""
@@ -84,22 +83,23 @@ class UserViewSet(viewsets.ModelViewSet):
     @verifyEmailSchema
     def verifyEmail(self, request):
         data = request.data
-        username = data.get('username')
         verification_code = data.get('verification_code')
-        try:
-            user = User.objects.get(username=username)
+        email_base64 = verification_code[:-6]
+        email_bytes = base64.b64decode(email_base64.encode("ascii"))
+        email = email_bytes.decode("ascii")
+        users = User.objects.filter(email=email)
+        if not users:
+            return Response({'message': 'User not found'},status=status.HTTP_404_NOT_FOUND)
+        for user in users:
             userProfile = UserProfile.objects.get(user=user)
             if userProfile.verified:
                 return Response({'message': 'User has been already verified'}, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist:
-            return Response({'message': 'User not found'},status=status.HTTP_404_NOT_FOUND)
-        # Verify
-        if userProfile.verification_code == verification_code:
-            userProfile.verified = True
-            userProfile.save()
-            return Response({"message": "User has been verified successfully"})
-        else: 
-            return Response({"message": "Verification code not correct"}, status=status.HTTP_400_BAD_REQUEST)
+            elif (userProfile.verification_code == verification_code and userProfile.verification_code is not None):
+                userProfile.verified = True
+                userProfile.verification_code = None
+                userProfile.save()
+                return Response({"message": "User has been verified successfully"})
+        return Response({"message": "Verification code not correct"}, status=status.HTTP_400_BAD_REQUEST)
 
 
     @loginSchema
@@ -127,58 +127,63 @@ class UserViewSet(viewsets.ModelViewSet):
                 else:
                     return Response({"message": "User has been banned"}, status=status.HTTP_403_FORBIDDEN)
             else:
-                return Response({'message': "Password not match"})
+                return Response({'message': "Password not match"}, status=status.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:
             return Response({"message": "Username or email not match"}, status=status.HTTP_404_NOT_FOUND)
 
+    @changePasswordSchema
+    def changePassword(self, request):
+        user = request.user
+        oldPassword = request.data.get('oldPassword', None)
+        newPassword = request.data.get('newPassword', None)
+        if oldPassword is None or newPassword is None:
+            return Response({'message': 'Both old password and new password must be provided'}, status=status.HTTP_400_BAD_REQUEST)
+        if (user.check_password(oldPassword)):
+            serializer = self.serializer_class(instance=user, data={'password': newPassword}, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Update password successfuly'}, status=status.HTTP_200_OK)
+            message = ""
+            for key, value in serializer.errors.items():
+                message += f'{value[0]} ({key})'
+                break
+            return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'message': 'Password not match'}, status=status.HTTP_400_BAD_REQUEST)
+            
+    @changeEmailSchema
+    def changeEmail(self, request):
+        user = request.user
+        newEmail = request.data.get('newEmail', None)
+        if newEmail is None:
+            return Response({'message': 'New email must be provided if you want to change email'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(instance=user, data={'email': newEmail}, partial=True)
+        if serializer.is_valid():
+            sendVerificationEmail(user, newEmail)
+            return Response({'message': 'Verification code was sent to your new email'}, status=status.HTTP_200_OK)
+        message = ""
+        for key, value in serializer.errors.items():
+            message += f'{value[0]} ({key})'
+            break
+        return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
+    @verifyChangeEmailSchema
+    def verifyChangeEmail(self, request):
+        user = request.user
+        userProfile = user.profile
+        verification_code = request.data.get('verification_code', None)
+        if (verification_code == userProfile.verification_code and userProfile.verification_code is not None):
+            newEmail_base64 = verification_code[:-6]
+            newEmail_bytes = base64.b64decode(newEmail_base64.encode("ascii"))
+            newEmail = newEmail_bytes.decode("ascii")
+            user.email = newEmail
+            user.save()
+            userProfile.verification_code = None
+            userProfile.save()
+            return Response({'message': 'Change email successfuly'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'Verification code not correct'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # @extend_schema(
-    #     request={
-    #         "multipart/form-data": {
-    #             "type": "object",
-    #             "properties": {
-    #                 "password": {"type": "string"},
-    #                 "email": {"type": "string"}},
-    #         },
-    #     },
-    #     responses={
-    #         200: OpenApiResponse(response=SuccessResponseSerializer,
-    #                              description="Operations successfully"),
-    #         404: OpenApiResponse(response=ResponseSerializer,
-    #                              description="User not found!")
-    #     }
-    #     # more customizations
-    # )
-    # def update(self, request, id=None, username=None):
-    #     try:
-    #         if id is None:
-    #             user = User.objects.get(username=username)
-    #         else:
-    #             user = User.objects.get(id=id)
-    #         data = request.data
-    #         serializer = UserSerializer(instance=user, data=data)
-    #         if serializer.is_valid():
-    #             serializer.save()
-    #             return Response({'message': 'Updated successfuly'}, status=status.HTTP_200_OK)
-    #         message = ""
-    #         for key, value in serializer.errors.items():
-    #             message += f'{value[0]} ({key})'
-    #             break
-    #         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
-    #     except User.DoesNotExist:
-    #         return Response({'message': f'User not found'},status=status.HTTP_404_NOT_FOUND)
-    #     return Response({'message': 'Error when updating'}, status=status.HTTP_400_BAD_REQUEST)
-    
-
-    # @extend_schema(
-    #     responses={
-    #         200: OpenApiResponse(response=SuccessResponseSerializer,
-    #                              description="Operations successfully"),
-    #         404: OpenApiResponse(response=ResponseSerializer,
-    #                              description="User not found!")
-    #     }
-    # )
     @banUserSchema
     def banUser(self, request, userId):
         try:

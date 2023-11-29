@@ -14,7 +14,6 @@ retrieveUserSchema = extend_schema(
         }
 )
 
-
 signUpSchema = extend_schema(
     summary="Sign up a new user account",
     request=UserSerializer,
@@ -36,8 +35,8 @@ loginSchema = extend_schema(
 )
 
 verifyEmailSchema = extend_schema(
-    summary="Verify after receiving a verification code from email",
-    request=verifyEmailSerializer,
+    summary="Verify account after signup",
+    request=VerifyEmailSerializer,
     responses = {
         200: OpenApiResponse(response=GeneralMessageSerializer, description="Verified successfully!"),
         400: OpenApiResponse(response=GeneralMessageSerializer, description="Bad request"),
@@ -52,6 +51,33 @@ resendVerificationSchema = extend_schema(
         200: OpenApiResponse(response=SuccessResendVerificationCode, description="Resend code successfully"),
         400: OpenApiResponse(response=GeneralMessageSerializer, description="Bad request"),
         404: OpenApiResponse(response=GeneralMessageSerializer, description="User not found")
+    }
+)
+
+changePasswordSchema = extend_schema(
+    summary="Provide both old password and new password to change password",
+    request=ChangePasswordSerializer,
+    responses= {
+        200: OpenApiResponse(response=GeneralMessageSerializer, description='Update password successfuly'),
+        400: OpenApiResponse(response=GeneralMessageSerializer, description="Something went wrong"),
+    }
+)
+
+changeEmailSchema = extend_schema(
+    summary="Change email, you have to verify to apply change",
+    request=ChangeEmailSerializer,
+    responses= {
+        200: OpenApiResponse(response=GeneralMessageSerializer, description='Verification code was sent to your new email'),
+        400: OpenApiResponse(response=GeneralMessageSerializer, description="Something went wrong"),
+    }
+)
+
+verifyChangeEmailSchema = extend_schema(
+    summary="Verify change email",
+    request=VerifyEmailSerializer,
+    responses= {
+        200: OpenApiResponse(response=GeneralMessageSerializer, description='Change email successfuly'),
+        400: OpenApiResponse(response=GeneralMessageSerializer, description='Verification code not correct'),
     }
 )
 

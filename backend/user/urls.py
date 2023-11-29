@@ -2,6 +2,7 @@ from django.urls import path
 from .views import UserViewSet, UserProfileViewSet, FriendViewSet, NotificationViewSet
 from .providerAuth import facebookAuthURL, facebookAuth, googleAuthURL, googleAuth
 from .passwordToken import *
+
 urlpatterns = [
     # Authentication
     path('auth/facebook/', facebookAuthURL),
@@ -24,6 +25,15 @@ urlpatterns = [
     })),
     path('verify/resend/', UserViewSet.as_view({
         'post': 'resendVerification',
+    })),
+    path('change-password/', UserViewSet.as_view({
+        'put': 'changePassword'
+    })),
+    path('change-email/', UserViewSet.as_view({
+        'put': 'changeEmail'
+    })),
+    path('verify-email/', UserViewSet.as_view({
+        'post': 'verifyChangeEmail'
     })),
     path('ban/<int:userId>/', UserViewSet.as_view({
         'get': 'banUser'
