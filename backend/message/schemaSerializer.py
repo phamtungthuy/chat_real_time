@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .serializer import *
+
 class GeneralMessageSerializer(serializers.Serializer):
     message = serializers.CharField()
 

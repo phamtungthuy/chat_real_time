@@ -3,6 +3,7 @@ from rest_framework import serializers
 from message.serializer import MessageSerializer
 from .serializer import ChannelSerializer
 from .schemaSerializer import *
+
 getMessageListSchema = extend_schema(
     summary = 'Get message list by channel id',
     responses = {

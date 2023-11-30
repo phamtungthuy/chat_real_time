@@ -20,10 +20,10 @@ urlpatterns = [
     path('login/', UserViewSet.as_view({
         'post': 'login',
     })),
-    path('verify/', UserViewSet.as_view({
+    path('verify-user/', UserViewSet.as_view({
         'post': 'verifyEmail',
     })),
-    path('verify/resend/', UserViewSet.as_view({
+    path('verify-user/resend/', UserViewSet.as_view({
         'post': 'resendVerification',
     })),
     path('change-password/', UserViewSet.as_view({

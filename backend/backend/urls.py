@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/message/', include('message.urls')),
     path('api/user/', include('user.urls')),
     path('api/report/', include('report.urls')),
+    path('api/search/', include('search.urls')),
     
     # path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     # path('api/token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
