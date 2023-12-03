@@ -72,7 +72,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Send message to WebSocket
         await self.send(text_data=text_data)
 
-    async def joinNewChannel(self):
+    async def joinChannel(self):
         channels = await async_db.getUserChannels(self.user)
         for channel in channels:
             group_name = f'group_{channel.id}'
@@ -81,16 +81,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def dbAsyncHandle(self, text_data_json):
         action = text_data_json.get('action', None)
         targetId = text_data_json.get('targetId', None)
-        data = text_data_json.get('data', None)
+        data = text_data_json.get('data', {})
 
-        # Join new channel
+        # Join channel
         if action == ACTION.JOIN_CHANNEL:
-            await self.joinNewChannel()
-            await self.send(text_data="Join new channel successfully")
+            await self.joinChannel()
+            await self.send(text_data="Join channel successfully")
 
         # Member, creator action
         if action == ACTION.CREATE_MESSAGE:
-            return await async_db.createMessage(self.user, data)
+            return await async_db.createMessage(self.user, targetId, data)
         if action == ACTION.REMOVE_MESSAGE:
             return await async_db.deleteMessage(data)
         if action == ACTION.CREATE_REACTION:
@@ -98,20 +98,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if action == ACTION.REMOVE_REACTION:
             return await async_db.deleteReaction(data)
         if action == ACTION.OUT_CHANNEL:
-            return await async_db.outChannel(self.user, data)
+            return await async_db.outChannel(self.user, targetId, data)
         if action == ACTION.SET_NICKNAME:
             return await async_db.setNickname(data)
         if action == ACTION.REMOVE_NICKNAME:
             return await async_db.removeNickname(data)
         if action == ACTION.FRIEND_REQUEST:
-            return await async_db.friendRequest(self.user, data)
+            return await async_db.friendRequest(self.user, targetId, data)
         if action == ACTION.FRIEND_ACCEPT:
-            return await async_db.friendAccept(self.user, data)
+            return await async_db.friendAccept(self, targetId, data)
             
         # Creator action
         if action == ACTION.ADD_MEMBER:
             if async_db.isCreator(self.user, targetId):
-                return await async_db.addMember(data)
+                return await async_db.addMember(targetId, data)
             else:
                 raise Exception("User is not creator to perform this action")
         if action == ACTION.REMOVE_MEMBER:
@@ -121,7 +121,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 raise Exception("User is not creator to perform this action")
         if action == ACTION.SET_CHANNEL_TITLE:
             if async_db.isCreator(self.user, targetId):
-                return await async_db.setChannelTitle(self.user, data)
+                return await async_db.setChannelTitle(targetId, data)
             else:
                 raise Exception("User is not creator to perform this action")
         if action == ACTION.CHANGE_CREATOR:
@@ -131,7 +131,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 raise Exception("User is not creator to perform this action")
         if action == ACTION.DISBAND_CHANNEL:
             if async_db.isCreator(self.user, targetId):
-                return await async_db.disbandChannel(data)
+                return await async_db.disbandChannel(targetId, data)
             else:
                 raise Exception("User is not creator to perform this action")
         return data

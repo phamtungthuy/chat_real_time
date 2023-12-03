@@ -15,7 +15,6 @@ import json, uuid
 from .schema import *
 
 
-
 @extend_schema(tags=['Channel'])
 class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()

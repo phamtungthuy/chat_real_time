@@ -7,6 +7,8 @@ from user.serializer import NotificationSerializer
 from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
 from rest_framework import serializers
+from asgiref.sync import async_to_sync
+
     
 # text_json_data = {
 #     "action": ACTION,
@@ -70,15 +72,15 @@ text_json_data = {
     "target": "channel",
     "targetId": int,
     "data": {
-        "channel": int,
         "content": str,
         "reply": int (null=True),
     }
 }
 """
 @database_sync_to_async
-def createMessage(user, data):
+def createMessage(user, channelId, data):
     data['member'] = Member.objects.get(user=user, channel_id=data['channel']).id
+    data['channel'] = channelId
     serializer = MessageSerializer(data=data)
     if (serializer.is_valid(raise_exception=True)):
         serializer.save()
@@ -144,12 +146,12 @@ text_json_data = {
     "targetId": int,
     "data": {
         "user": int,
-        "channel": int,
     }
 }
 """
 @database_sync_to_async
-def addMember(data):
+def addMember(channelId, data):
+    data['channel'] = channelId
     serializer = MemberSerializer(data=data)
     if serializer.is_valid(raise_exception=True):
         serializer.save()
@@ -178,14 +180,11 @@ text_json_data = {
     "action": "out_channel",
     "target": "channel",
     "targetId": int,
-    "data": {
-        "channelId": int 
-    }
+    "data": {}
 }
 """
 @database_sync_to_async
-def outChannel(user, data):
-    channelId = data.get('channelId')
+def outChannel(user, channelId, data):
     member = Member.objects.get(user=user, channel_id=channelId)
     if member.role == 'CREATOR':
         raise Exception("You can not out channel while you are still creator")
@@ -221,14 +220,11 @@ text_json_data = {
     "action": "disband_channel",
     "target": "channel",
     "targetId": int,
-    "data": {
-        "channelId": int
-    }
+    "data": {}
 }
 """
 @database_sync_to_async
-def disbandChannel(data):
-    channelId = data.get('channelId')
+def disbandChannel(channelId, data):
     channel = Channel.objects.get(pk=channelId)
     channel.delete()
     return data
@@ -240,14 +236,12 @@ text_json_data = {
     "target": "channel",
     "targetId": int,
     "data": {
-        "channelId": int,
         "title": str
     }
 }
 """
 @database_sync_to_async
-def setChannelTitle(data):
-    channelId = data.get('channelId')
+def setChannelTitle(channelId, data):
     title = data.get('title')
     channel = Channel.objects.get(pk=channelId)
     serializer = ChannelSerializer(channel, data=data, partial=True)
@@ -303,17 +297,22 @@ text_json_data = {
     "action": "friend_request",
     "target": "user",
     "targetId": int,
-    "data": {
-        "receiver": int
-    }
+    "data": {}
 }
 """
 @database_sync_to_async
-def friendRequest(user, data):
+def friendRequest(user, receiver, data):
     data.update({
+        "receiver": receiver,
         "sender": user.id,
         "notification_type": "FRIEND_REQUEST"
     })
+    if Notification.objects.filter(
+        receiver_id=data['receiver'],
+        sender_id=data['sender'],
+        notification_type="FRIEND_REQUEST"
+    ).exists():
+        raise Exception("You have already sent friend request to this user")
     serializers = NotificationSerializer(data=data)
     if (serializers.is_valid(raise_exception=True)):
         serializers.save()
@@ -325,15 +324,17 @@ text_json_data = {
     "action": "friend_accept",
     "target": "user",
     "targetId": int,
-    "data": {
-        "receiver": int,
-    }
+    "data": {}
 }
 """
 @database_sync_to_async
-def friendAccept(user, data):
-    receiver = data.get('receiver')
+def friendAccept(consumer, receiver, data):
+    user = consumer.user
     friend_with = User.objects.get(pk=receiver)
+    if Friend.objects.filter(user=user, friend_with=friend_with).exists() \
+    or Friend.objects.filter(user=friend_with, friend_with=user).exists():
+        raise Exception("You have already been friend")
+    
     Friend.objects.create(user=user, friend_with=friend_with)
     Friend.objects.create(user=friend_with, friend_with=user)
     channel = Channel.objects.create(
@@ -343,7 +344,9 @@ def friendAccept(user, data):
     Member.objects.create(user=user, channel=channel)
     Member.objects.create(user=friend_with, channel=channel)
     
+    async_to_sync(consumer.joinChannel)()
     data.update({
+        "receiver": receiver,
         "sender": user.id,
         "notification_type": "FRIEND_ACCEPT"
     })
