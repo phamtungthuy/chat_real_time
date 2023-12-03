@@ -46,7 +46,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             text_data_json = json.loads(text_data)
             text_data_json['data'] = await self.dbAsyncHandle(text_data_json)
-            target = text_data_json['target']
+            target = text_data_json.get('target', '')
             # Send message to user
             if target == TARGET.USER:
                 userId = text_data_json['targetId']
@@ -72,19 +72,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Send message to WebSocket
         await self.send(text_data=text_data)
 
+    async def joinNewChannel(self):
+        channels = await async_db.getUserChannels(self.user)
+        for channel in channels:
+            group_name = f'group_{channel.id}'
+            await self.channel_layer.group_add(group_name, self.channel_name)
 
     async def dbAsyncHandle(self, text_data_json):
-        action = text_data_json.get('action')
-        targetId = text_data_json.get('targetId')
-        data = text_data_json.get('data')
+        action = text_data_json.get('action', None)
+        targetId = text_data_json.get('targetId', None)
+        data = text_data_json.get('data', None)
+
+        # Join new channel
+        if action == ACTION.JOIN_CHANNEL:
+            await self.joinNewChannel()
+            await self.send(text_data="Join new channel successfully")
 
         # Member, creator action
         if action == ACTION.CREATE_MESSAGE:
-            return await async_db.createMessage(data)
+            return await async_db.createMessage(self.user, data)
         if action == ACTION.REMOVE_MESSAGE:
             return await async_db.deleteMessage(data)
         if action == ACTION.CREATE_REACTION:
-            return await async_db.createReaction(data)
+            return await async_db.createReaction(self.user, targetId, data)
         if action == ACTION.REMOVE_REACTION:
             return await async_db.deleteReaction(data)
         if action == ACTION.OUT_CHANNEL:

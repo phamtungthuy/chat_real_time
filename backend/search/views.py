@@ -30,9 +30,12 @@ def searchChannel(request):
 
     channelSerializer = SearchChannelSerializer(channelResult, many=True)
     userSerializer = SearchUserSerializer(userResult, many=True)
-    return Response({"users": userSerializer.data,
-                    "channels": channelSerializer.data,
-                    "resultSize": userResult.count() + channelResult.count()})
+    data = {
+        "users": userSerializer.data,
+        "channels": channelSerializer.data,
+        "resultSize": userResult.count() + channelResult.count()
+    }
+    return Response({'data': data, 'message': 'Search channel successfully'})
 
 
 @searchMessageSchema
@@ -45,10 +48,14 @@ def searchMessage(request, channelId):
         channel = Channel.objects.get(pk=channelId)
         if not channel.members.filter(user=user):
             return Response({"message": "You are not member of this channel"}, status.HTTP_403_FORBIDDEN)
-        messages = channel.messages.filter(message_type="text")
+        messages = channel.messages.filter(message_type="TEXT")
         messageResult = messages.filter(content__icontains=query)
         messageSerializer = SearchMessageSerializer(messageResult, many=True)
-        return Response({"messages": messageSerializer.data, "resultSize": messageResult.count()})
+        data = {
+            "messages": messageSerializer.data,
+            "resultSize": messageResult.count()
+        }
+        return Response({"data": data, "message": "Search message successfully"})
     except:
         return Response({"message": "Channel not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -68,4 +75,8 @@ def searchFriend(request):
     
     userResult = [friend.friend_with for friend in friendResult]
     friendSerializer = SearchUserSerializer(userResult, many=True)
-    return Response({"friends": friendSerializer.data, "resultSize": friendResult.count()})
+    data = {
+        "friends": friendSerializer.data,
+        "resultSize": friendResult.count()
+    }
+    return Response({"data": data, 'message': "Search friend successfully"})

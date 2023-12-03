@@ -5,9 +5,6 @@ import channel.serializer
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    # member = channel.serializer.MemberSerializer()
-    # member = serializers.SerializerMethodField()
-
     class Meta:
         model = Message
         fields = '__all__'

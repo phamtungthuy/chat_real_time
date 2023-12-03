@@ -12,7 +12,7 @@ class ChannelSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def get_member_count(self, obj):
-        return len(obj.members.all())
+        return obj.members.count()
 
     def get_last_message(self, obj):
         last_message = obj.messages.first()

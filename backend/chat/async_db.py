@@ -19,6 +19,7 @@ from rest_framework import serializers
 # }
 
 class ACTION:
+    JOIN_CHANNEL = 'join_channel'
     CREATE_MESSAGE = 'create_message'
     REMOVE_MESSAGE = 'remove_message'
     CREATE_REACTION = 'create_reaction'
@@ -27,7 +28,7 @@ class ACTION:
     REMOVE_MEMBER = 'remove_member'
     OUT_CHANNEL = 'out_channel'
     CHANGE_CREATOR = 'change_creator'
-    DISBAND_GROUP = 'disband_channel'
+    DISBAND_CHANNEL = 'disband_channel'
     SET_CHANNEL_TITLE = 'set_channel_title'
     SET_NICKNAME = 'set_nickname'
     REMOVE_NICKNAME = 'remove_nickname'
@@ -50,7 +51,6 @@ def setOfflineUser(user):
     userProfile.online = False
     userProfile.save()
     
-
 @database_sync_to_async
 def getUserChannels(user):
     members = user.members.all()
@@ -70,7 +70,6 @@ text_json_data = {
     "target": "channel",
     "targetId": int,
     "data": {
-        "member": int,
         "channel": int,
         "content": str,
         "reply": int (null=True),
@@ -78,7 +77,8 @@ text_json_data = {
 }
 """
 @database_sync_to_async
-def createMessage(data):
+def createMessage(user, data):
+    data['member'] = Member.objects.get(user=user, channel_id=data['channel']).id
     serializer = MessageSerializer(data=data)
     if (serializer.is_valid(raise_exception=True)):
         serializer.save()
@@ -107,14 +107,14 @@ text_json_data = {
     "target": "channel",
     "targetId": int,
     "data": {
-        "member": int,
         "message": int,
         "emoji": int
     }
 }
 """
 @database_sync_to_async
-def createReaction(data):
+def createReaction(user, channelId, data):
+    data['member'] = Member.objects.get(user=user, channel_id=channelId).id
     serializer = ReactionSerializer(data=data)
     if (serializer.is_valid(raise_exception=True)):
         serializer.save()
@@ -319,9 +319,10 @@ def friendRequest(user, data):
         serializers.save()
         return serializers.data
 
+
 """
 text_json_data = {
-    "action": "friend_request",
+    "action": "friend_accept",
     "target": "user",
     "targetId": int,
     "data": {
@@ -331,9 +332,17 @@ text_json_data = {
 """
 @database_sync_to_async
 def friendAccept(user, data):
-    friend_with = data.get('receiver')
-    Friend.objects.create(user=user, friend_with_id=friend_with)
-    Friend.objects.create(user_id=friend_with, friend_with=user)
+    receiver = data.get('receiver')
+    friend_with = User.objects.get(pk=receiver)
+    Friend.objects.create(user=user, friend_with=friend_with)
+    Friend.objects.create(user=friend_with, friend_with=user)
+    channel = Channel.objects.create(
+        title=f'{user.username} & {friend_with.username}',
+        avatar_url=user.profile.avatar_url
+    )
+    Member.objects.create(user=user, channel=channel)
+    Member.objects.create(user=friend_with, channel=channel)
+    
     data.update({
         "sender": user.id,
         "notification_type": "FRIEND_ACCEPT"

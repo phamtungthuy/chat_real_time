@@ -133,8 +133,6 @@ class FriendSerializer(serializers.ModelSerializer):
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    sender = serializers.SerializerMethodField()
-
     class Meta:
         model = Notification
         fields = ['sender', 'notification_type', 'create_at', 'receiver']
@@ -142,7 +140,9 @@ class NotificationSerializer(serializers.ModelSerializer):
             'receiver': {'write_only': True}
         }
 
-    def get_sender(self, obj):       
-        senderSerializer = UserSerializer(obj.sender, many=False)
-        data = senderSerializer.get()
+    def to_representation(self, instance):
+        data = super(NotificationSerializer, self).to_representation(instance)
+        senderSerializer = UserSerializer(instance.sender, many=False)
+        sender = senderSerializer.get()
+        data['sender'] = sender
         return data
