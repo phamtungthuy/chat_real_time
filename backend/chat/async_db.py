@@ -79,7 +79,7 @@ text_json_data = {
 """
 @database_sync_to_async
 def createMessage(user, channelId, data):
-    data['member'] = Member.objects.get(user=user, channel_id=data['channel']).id
+    data['member'] = Member.objects.get(user=user, channel_id=channelId).id
     data['channel'] = channelId
     serializer = MessageSerializer(data=data)
     if (serializer.is_valid(raise_exception=True)):
