@@ -59,7 +59,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "build"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -130,6 +130,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+STATICFILES_DIRS = [BASE_DIR / 'build/static']
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -194,7 +196,7 @@ EMAIL_USE_TLS = True
 # Facebook config
 FACEBOOK_CLIENT_ID = os.getenv('FACEBOOK_CLIENT_ID')
 FACEBOOK_CLIENT_SECRET = os.getenv('FACEBOOK_CLIENT_SECRET')
-FACEBOOK_REDIRECT_URI = 'http://localhost:8000/api/user/auth/facebook/callback/'
+FACEBOOK_REDIRECT_URI = os.getenv('FACEBOOK_REDIRECT_URI')
 
 # Google config
 GOOGLE_CONFIG = {
@@ -205,9 +207,9 @@ GOOGLE_CONFIG = {
         "token_uri":"https://oauth2.googleapis.com/token",
         "auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
         "client_secret": os.getenv('GOOGLE_CLIENT_SECRET'),
-        "redirect_uris":["http://127.0.0.1:8000/api/auth/google/callback/"],
-        "javascript_origins":["http://127.0.0.1:8000"]
+        "redirect_uris":[os.getenv('GOOGLE_REDIRECT_URI')],
+        "javascript_origins":[os.getenv('GOOGLE_JAVASCRIPT_ORIGIN')]
     }
 }
 
-GOOGLE_REDIRECT_URI = 'http://127.0.0.1:8000/api/user/auth/google/callback/'
+GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI')
