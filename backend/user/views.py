@@ -57,7 +57,7 @@ class UserViewSet(viewsets.ModelViewSet):
         try:
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
-            sendVerificationEmail(user. user.email)
+            sendVerificationEmail(user, user.email)
             return Response({"message": "Verification code was sent", "data": serializer.data})
         except serializers.ValidationError as e:
             message = ""
