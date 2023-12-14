@@ -29,22 +29,24 @@ def googleAuthURL(request):
     google = _get_google()
     authorization_url, state = google.authorization_url(
         access_type='offline', include_granted_scopes='false')
-    return redirect(authorization_url)
+    return Response(authorization_url)
 
 
 @extend_schema(tags=['Oauth2'])
-@api_view(['GET'])
+@api_view(['POST'])
 def googleAuth(request):
-    error = request.GET.get('error', None) 
+    url = request.data.get('url')
+    # error = request.GET.get('error', None) 
+    error = None
     if not error:
         google = _get_google()
         try:
-            google.fetch_token(authorization_response=request.build_absolute_uri())
+            google.fetch_token(authorization_response=url)
             credentials = google.credentials
             service = build('oauth2', 'v2', credentials=credentials)
             user_info = service.userinfo().get().execute()
         except Exception as e:
-            Response({'message': repr(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'message': repr(e)}, status=status.HTTP_403_FORBIDDEN)
         validated_data, avatar_url = validateGoogleInfo(user_info)
         serializer = UserSerializer(data=validated_data)
         if serializer.is_valid():
@@ -61,7 +63,7 @@ def googleAuth(request):
             return Response({'message': "Signup with google successfully", 'data': token})
         message = ""
         for key, value in serializer.errors.items():
-            message += f'{value[0]} ({key})'
+            message += f'{value[0]}'
             break
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     return Response({'message': error}, status=status.HTTP_400_BAD_REQUEST)
@@ -73,22 +75,24 @@ def facebookAuthURL(request):
     facebook = _get_facebook()
     authorization_base_url = 'https://www.facebook.com/v18.0/dialog/oauth'
     authorization_url, state = facebook.authorization_url(authorization_base_url)
-    return redirect(authorization_url)
+    return Response(authorization_url)
 
 
 @extend_schema(tags=['Oauth2'])
-@api_view(['GET'])
+@api_view(['POST'])
 def facebookAuth(request):
-    error = request.GET.get('error', None) 
+    url = request.data.get('url')
+    # error = request.GET.get('error', None) 
+    error = None
     if not error:
         facebook = _get_facebook()
         try:
-            facebook.fetch_token(authorization_response=request.build_absolute_uri(),
+            facebook.fetch_token(authorization_response=url,
                                 token_url='https://graph.facebook.com/oauth/access_token', 
                                 client_secret=settings.FACEBOOK_CLIENT_SECRET)
             res = facebook.get('https://graph.facebook.com/me?fields=id,name,email,first_name,last_name,picture.width(640)')
         except Exception as e:
-            Response({'message': repr(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'message': repr(e)}, status=status.HTTP_403_FORBIDDEN)
         user_info = json.loads(res.content.decode())
         validated_data, avatar_url = validateFacebookInfo(user_info)
         serializer = UserSerializer(data=validated_data)
@@ -106,7 +110,7 @@ def facebookAuth(request):
             return Response({'message': "Signup with facebook successfully", 'data': token})
         message = ""
         for key, value in serializer.errors.items():
-            message += f'{value[0]} ({key})'
+            message += f'{value[0]}'
             break
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     return Response({'message': error}, status=status.HTTP_400_BAD_REQUEST)
