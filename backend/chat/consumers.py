@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
 from channels.db import database_sync_to_async
+from channels.exceptions import StopConsumer
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -29,16 +30,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
     async def disconnect(self, close_code):
+        super().disconnect(close_code)
         if close_code == 3000:
             return
         # Change offline status
         await async_db.setOfflineUser(self.user)
         # Leave all chat group
-        channels = await async_db.getUserChannels(self.user)
-        if channels is not None:
-            for channel in channels:
-                group_name = f'group_{channel.id}'
-                await self.channel_layer.group_discard(group_name, self.channel_name)
+        # channels = await async_db.getUserChannels(self.user)
+        # if channels is not None:
+        #     for channel in channels:
+        #         group_name = f'group_{channel.id}'
+        #         await self.channel_layer.group_discard(group_name, self.channel_name)
 
 
     # Receive message from WebSocket

@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import Message, Reaction, Emoji
-from channel.models import Channel
+from channel.models import Channel, Member
 from .serializer import MessageSerializer, ReactionSerializer, EmojiSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .schema import *
@@ -38,7 +38,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         file_list = request.FILES.getlist('file')
         # Check whether file is empty
         if file_list is None or len(file_list) == 0:
-            return Response({"message": "File not provided"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Attachment file not found"}, status=status.HTTP_400_BAD_REQUEST)
         for file_obj in file_list:
             # Check type and size
             file_type = file_obj.content_type.split('/')[0]
@@ -62,13 +62,15 @@ class MessageViewSet(viewsets.ModelViewSet):
             file_url = s3.url(file_path)
             data['content'] += file_url + ' '
         # Save to db as message
-        data['message_type'] = "IMAGE" 
         try:
+            member = Member.objects.get(channel_id=channelId, user=request.user)
+            data['member'] = member.id
+            data['message_type'] = "IMAGE"
             serializer = self.serializer_class(data=data)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 text_data_json = {
-                    "action": "upload_image",
+                    "action": "create_message",
                     "target": "channel",
                     "targetId": channelId,
                     "data": serializer.data
