@@ -30,7 +30,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
     async def disconnect(self, close_code):
-        super().disconnect(close_code)
         if close_code == 3000:
             return
         # Change offline status
@@ -41,6 +40,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         #     for channel in channels:
         #         group_name = f'group_{channel.id}'
         #         await self.channel_layer.group_discard(group_name, self.channel_name)
+        raise StopConsumer()
 
 
     # Receive message from WebSocket
