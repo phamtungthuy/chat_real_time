@@ -7,7 +7,27 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from channel.models import Channel, Member
 from .serializer import SearchChannelSerializer, SearchUserSerializer, SearchMessageSerializer
-from .schema import searchChannelSchema, searchFriendSchema, searchMessageSchema
+from .schema import searchChannelSchema, searchFriendSchema, searchMessageSchema, getSearchList
+
+@getSearchList
+@api_view(['GET'])
+def getSearchList(request):
+    user = request.user
+    members = user.members.all()
+    userChannels = Channel.objects.filter(members__user=user).distinct()
+    channelList = []
+    for userChannel in userChannels:
+        if userChannel.members.count() > 2:
+            channelList.append(userChannel)
+    userList = User.objects.all()
+    channelSerializer = SearchChannelSerializer(channelList, many=True)
+    userSerializer = SearchUserSerializer(userList, many=True)
+    data = {
+        "users": userSerializer.data,
+        "channels": channelSerializer.data,
+        "resultSize": userList.count() + len(channelList)
+    }
+    return Response({'data': data, 'message': 'Get search list successfully'})
 
 @searchChannelSchema
 @api_view(['GET'])

@@ -2,6 +2,21 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParamet
 from rest_framework import serializers
 from .schemaSerializer import SearchChannelResponse, SearchMessageResponse, SearchFriendResponse, GeneralMessageSerializer
 
+
+getSearchList = extend_schema(
+    tags = ['Search'],
+    summary = 'Get all user and get all channel you are in',
+    parameters = [
+        OpenApiParameter(
+            'query'
+        )
+    ],
+    responses = {
+        200: OpenApiResponse(response=SearchChannelResponse,
+                             description="Get search list successfully"),
+    }
+)
+
 searchChannelSchema = extend_schema(
     tags = ['Search'],
     summary = 'Search channel (user you was chatted with, and channel you joined)',

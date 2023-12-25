@@ -8,7 +8,7 @@ ROLES = (
 
 class Channel(models.Model):
     title = models.CharField(max_length=30)
-    avatar_url = models.CharField(null=True, max_length=128)
+    avatar_url = models.CharField(null=True, max_length=512)
     create_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
