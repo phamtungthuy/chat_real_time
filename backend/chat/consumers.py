@@ -94,11 +94,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if action == ACTION.CREATE_MESSAGE:
             return await async_db.createMessage(self.user, targetId, data)
         if action == ACTION.REMOVE_MESSAGE:
-            return await async_db.deleteMessage(data)
+            return await async_db.removeMessage(data)
         if action == ACTION.CREATE_REACTION:
             return await async_db.createReaction(self.user, targetId, data)
         if action == ACTION.REMOVE_REACTION:
-            return await async_db.deleteReaction(data)
+            return await async_db.removeReaction(data)
         if action == ACTION.OUT_CHANNEL:
             return await async_db.outChannel(self.user, targetId, data)
         if action == ACTION.SET_NICKNAME:
