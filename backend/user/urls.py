@@ -81,6 +81,11 @@ urlpatterns = [
     path('notifications/', NotificationViewSet.as_view({
         'get': 'getNotificationList'
     })),
+    path('sent-notifications/', NotificationViewSet.as_view({
+        'get': 'getSentFriendRequestList'
+    })),
+
+
     path('passwordreset/', 
          CustomResetPasswordRequestTokenViewSet.as_view({
             'post': 'create'     

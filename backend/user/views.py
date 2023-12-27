@@ -335,5 +335,12 @@ class NotificationViewSet(viewsets.ViewSet):
         serializer = self.serializer_class(notificationList, many=True)
         return Response({'message': 'Get notification list successfully', 'data': serializer.data})
 
+    @getSentFriendRequestListSchema
+    def getSentFriendRequestList(self, request):
+        user = request.user
+        sentFriendRequestList = Notification.objects.filter(sender=user, notification_type='friend_request')
+        serializer = self.serializer_class(sentFriendRequestList, many=True)
+        return Response({'message': 'Get sent friend request list successfully', 'data': serializer.data})
+
 
     

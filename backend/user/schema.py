@@ -182,7 +182,14 @@ getNotificationListSchema = extend_schema(
     responses = {
         200: OpenApiResponse(response=SuccessGetNotificationListSerializer, description="Get notification list successfully"),
         401: OpenApiResponse(response=GeneralMessageSerializer, description="You need provide authentication token to make this action"),
-        
     }
+)
 
+getSentFriendRequestListSchema = extend_schema(
+    summary = "Get sent friend request list",
+    description="You need authentication token of current user to get all notifications",
+    responses = {
+        200: OpenApiResponse(response=SuccessGetNotificationListSerializer, description="Get sent friend request list successfull"),
+        401: OpenApiResponse(response=GeneralMessageSerializer, description="You need provide authentication token to make this action"),
+    }
 )
