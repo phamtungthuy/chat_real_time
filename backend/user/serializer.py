@@ -135,7 +135,7 @@ class FriendSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ['sender', 'notification_type', 'create_at', 'receiver']
+        fields = ['sender', 'notification_type', 'status', 'create_at', 'receiver']
         extra_kwargs = {
             'receiver': {'write_only': True}
         }

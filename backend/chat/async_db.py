@@ -36,6 +36,7 @@ class ACTION:
     REMOVE_NICKNAME = 'remove_nickname'
     FRIEND_REQUEST = 'friend_request'
     FRIEND_ACCEPT = 'friend_accept'
+    FRIEND_DENY = 'friend_deny'
 
 class TARGET:
     USER = 'user'
@@ -338,19 +339,53 @@ def friendAccept(consumer, receiver, data):
     Friend.objects.create(user=user, friend_with=friend_with)
     Friend.objects.create(user=friend_with, friend_with=user)
     channel = Channel.objects.create(
-        title=f'{user.username} & {friend_with.username}',
+        title=f'{user.username} || {friend_with.username}',
         avatar_url=user.profile.avatar_url
     )
     Member.objects.create(user=user, channel=channel)
     Member.objects.create(user=friend_with, channel=channel)
     
+    requestToAccept = Notification.objects.filter(sender_id=receiver,
+        receiver=user,
+        notification_type='friend_request',
+        status='pending'
+    ).first()
+    if requestToAccept:
+        requestToAccept.status = 'HANDLED'
+        requestToAccept.save()
+
     async_to_sync(consumer.joinChannel)()
     data.update({
         "receiver": receiver,
         "sender": user.id,
-        "notification_type": "FRIEND_ACCEPT"
+        "notification_type": "FRIEND_ACCEPT",
+        "status": "HANDLED"
     })
     serializer = NotificationSerializer(data=data)
     if (serializer.is_valid(raise_exception=True)):
         serializer.save()
         return serializer.data
+
+"""
+text_json_data = {
+    "action": "friend_deny",
+    "target": "user",
+    "targetId": userId
+}
+"""
+
+@database_sync_to_async
+def friendDeny(receiver, senderId):
+    requestToDeny = Notification.objects.filter(
+        receiver=receiver,
+        sender_id=senderId,
+        status='pending',
+        notification_type="friend_request"
+    ).first()
+    if requestToDeny:
+        requestToDeny.status = 'HANDLED'
+        requestToDeny.save()
+        serializer = NotificationSerializer(requestToDeny)
+        return serializer.data
+    else:
+        raise Exception("You don't have friend request to deny")

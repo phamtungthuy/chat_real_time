@@ -49,6 +49,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             text_data_json = json.loads(text_data)
             text_data_json['data'] = await self.dbAsyncHandle(text_data_json)
             target = text_data_json.get('target', '')
+
+            # Not target -> not send ws
+
             # Send message to user
             if target == TARGET.USER:
                 userId = text_data_json['targetId']
@@ -85,6 +88,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         targetId = text_data_json.get('targetId', None)
         data = text_data_json.get('data', {})
 
+        """
+            {
+                action: 'join_channel',
+                target: 'channel',
+                targetId: channelId
+            }
+        """
+
         # Join channel
         if action == ACTION.JOIN_CHANNEL:
             await self.joinChannel()
@@ -109,7 +120,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return await async_db.friendRequest(self.user, targetId, data)
         if action == ACTION.FRIEND_ACCEPT:
             return await async_db.friendAccept(self, targetId, data)
-            
+        if action == ACTION.FRIEND_DENY:
+            return await async_db.friendDeny(self.user, targetId)
+
         # Creator action
         if action == ACTION.ADD_MEMBER:
             if async_db.isCreator(self.user, targetId):

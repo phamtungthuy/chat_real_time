@@ -10,6 +10,11 @@ NOTIFICATION_TYPE = (
     ("FRIEND_ACCEPT", "friend_accept"),
 )
 
+NOTIFICATION_STATUS = (
+    ("PENDING", 'peding'),
+    ("HANDLED", 'handled')
+)
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, related_name='profile', on_delete=models.CASCADE)
     verified = models.BooleanField(default=False)
@@ -36,4 +41,5 @@ class Notification(models.Model):
     receiver = models.ForeignKey(User, related_name="notifications", on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPE)
+    status = models.CharField(max_length=10, default="PENDING", choices=NOTIFICATION_STATUS)
     create_at = models.DateTimeField(auto_now_add=True)
