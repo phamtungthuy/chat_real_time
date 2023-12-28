@@ -169,6 +169,24 @@ class ChannelViewSet(viewsets.ModelViewSet):
             return Response({"message": "Update channel avatar successfully", "data": data})
         except Exception as e:
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def banChannel(self, request, channelId):
+        try:
+            channel = Channel.objects.get(pk=channelId)
+            channel.is_active = False
+            channel.save()
+            return Response({'Banned user successfully'}, status=status.HTTP_200_OK)
+        except Channel.DoesNotExist:
+            return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    def unbanChannel(self, request, channelId):
+        try:
+            channel = Channel.objects.get(pk=channelId)
+            channel.is_active = True
+            channel.save()
+            return Response({'Banned user successfully'}, status=status.HTTP_200_OK)
+        except Channel.DoesNotExist:
+            return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
             
 @extend_schema(tags=['Member', 'Channel'])
 class MemberViewSet(viewsets.ModelViewSet):

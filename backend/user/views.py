@@ -207,6 +207,16 @@ class UserViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
+    @banUserSchema
+    def unbanUser(self, request, userId):
+        try:
+            user = User.objects.get(pk=userId)
+            user.is_active = True
+            user.save()
+            return Response({'Unbanned user successfully'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
     @getChannelListSchema
     def getChannelList(self, request):
         user = request.user

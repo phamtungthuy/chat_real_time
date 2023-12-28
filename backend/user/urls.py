@@ -36,7 +36,10 @@ urlpatterns = [
         'post': 'verifyChangeEmail'
     })),
     path('ban/<int:userId>/', UserViewSet.as_view({
-        'get': 'banUser'
+        'post': 'banUser'
+    })),
+    path('unban/<int:userId>/', UserViewSet.as_view({
+        'post': 'unbanUser'
     })),
 
     path('channels/', UserViewSet.as_view({
