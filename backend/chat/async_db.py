@@ -311,7 +311,8 @@ def friendRequest(user, receiver, data):
     if Notification.objects.filter(
         receiver_id=data['receiver'],
         sender_id=data['sender'],
-        notification_type="FRIEND_REQUEST"
+        notification_type="FRIEND_REQUEST",
+        status="PENDING"
     ).exists():
         raise Exception("You have already sent friend request to this user")
     serializers = NotificationSerializer(data=data)

@@ -130,12 +130,13 @@ class ReactionViewSet(viewsets.ModelViewSet):
             return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
     @getReactionListSchema
-    def getReactionList(self, request, messageId):
+    def getReactionList(self, request, channelId):
         try:
-            reactionList = self.queryset.filter(message=messageId)
+            reactionList = self.queryset.filter(member__channel=channelId)
             serializer = self.serializer_class(reactionList, many=True)
             return Response({'message': 'Get reaction list successfully', 'data': serializer.data})
-        except:
+        except Exception as e:
+            print(e)
             return Response({'message': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)
 
     @changeReactionSchema

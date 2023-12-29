@@ -12,7 +12,7 @@ urlpatterns = [
     })),
 
     # Reaction url
-    path('<int:messageId>/reactions/', ReactionViewSet.as_view({
+    path('channel-reactions/<int:channelId>/', ReactionViewSet.as_view({
         'get': 'getReactionList',
     })),
     # path('reaction/', ReactionViewSet.as_view({
