@@ -31,7 +31,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
 
     @getAllChannelsSchema
     def getAllChannels(self, request):
-        channels = self.queryset
+        channels = self.queryset.all()
         serializer = self.serializer_class(channels, many=True)
         return Response({"message": "Get all channels successfully", "data": serializer.data})
 
@@ -172,7 +172,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
     
     def banChannel(self, request, channelId):
         try:
-            channel = Channel.objects.get(pk=channelId)
+            channel = self.queryset.get(pk=channelId)
             channel.is_active = False
             channel.save()
             return Response({'Banned user successfully'}, status=status.HTTP_200_OK)
@@ -181,7 +181,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
     
     def unbanChannel(self, request, channelId):
         try:
-            channel = Channel.objects.get(pk=channelId)
+            channel = self.queryset.get(pk=channelId)
             channel.is_active = True
             channel.save()
             return Response({'Banned user successfully'}, status=status.HTTP_200_OK)
