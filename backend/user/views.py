@@ -35,7 +35,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @getAllUsersSchema
     def getAllUsers(self, request):
-        users = self.queryset
+        users = self.queryset.all()
         serializer = self.serializer_class(users, many=True)
         return Response({"message": "Get all users successfully", "data": serializer.data})
 
@@ -187,7 +187,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @banUserSchema
     def banUser(self, request, userId):
         try:
-            user = User.objects.get(pk=userId)
+            user = self.queryset.get(pk=userId)
             text_data_json = {
                 "action": "ban_user",
                 "target": "user",
@@ -210,7 +210,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @banUserSchema
     def unbanUser(self, request, userId):
         try:
-            user = User.objects.get(pk=userId)
+            user = self.queryset.get(pk=userId)
             user.is_active = True
             user.save()
             return Response({'Unbanned user successfully'}, status=status.HTTP_200_OK)
