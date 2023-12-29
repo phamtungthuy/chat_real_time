@@ -339,6 +339,25 @@ def friendAccept(consumer, receiver, data):
     
     Friend.objects.create(user=user, friend_with=friend_with)
     Friend.objects.create(user=friend_with, friend_with=user)
+
+    for channel in Channel.objects.all():
+        members = channel.members.all()
+        if members.count() == 2:
+            if ((members[0].user == user and members[1].user.id == friendId)
+            or (members[1].user == user and members[0].user.id == friendId)):
+                if not channel.is_active:
+                    channel.is_active = True
+                    data.update({
+                        "receiver": receiver,
+                        "sender": user.id,
+                        "notification_type": "FRIEND_ACCEPT",
+                        "status": "HANDLED"
+                    })
+                    serializer = NotificationSerializer(data=data)
+                    if (serializer.is_valid(raise_exception=True)):
+                        serializer.save()
+                        return serializer.data
+
     channel = Channel.objects.create(
         title=f'{user.username} || {friend_with.username}',
         avatar_url=user.profile.avatar_url

@@ -5,6 +5,7 @@ from drf_spectacular.types import OpenApiTypes
 from .serializer import UserSerializer, FriendSerializer, UserProfileSerializer, NotificationSerializer
 from django.contrib.auth.models import User
 from user.models import UserProfile, Friend, Notification
+from channel.models import Channel
 from channel.serializer import ChannelSerializer
 from .schema import *
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
@@ -221,7 +222,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def getChannelList(self, request):
         user = request.user
         members = user.members.all()
-        channels = [member.channel for member in members]
+        channels = [member.channel for member in members if member.channel.is_active]
         serializer = ChannelSerializer(channels, many=True)
         return Response({'message': 'Get channel list successfully', 'data': serializer.data})
 
@@ -328,6 +329,16 @@ class FriendViewSet(viewsets.ViewSet):
         try:
             friend = Friend.objects.filter(Q(user=user, friend_with=friendId) | Q(user_id=friendId, friend_with=user))
             friend.delete()
+            targetChannel = None
+            for channel in Channel.objects.all():
+                members = channel.members.all()
+                if members.count() == 2:
+                    if ((members[0].user == user and members[1].user.id == friendId)
+                    or (members[1].user == user and members[0].user.id == friendId)):
+                        targetChannel = channel
+                        break;
+            targetChannel.is_active = False
+            targetChannel.save()
             return Response({'message': 'Delete friend successfully'})
         except Friend.DoesNotExist:
             return Response({"message": "Friend not found"}, status=status.HTTP_404_NOT_FOUND)
