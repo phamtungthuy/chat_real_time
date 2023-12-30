@@ -343,8 +343,8 @@ def friendAccept(consumer, receiver, data):
     for channel in Channel.objects.all():
         members = channel.members.all()
         if members.count() == 2:
-            if ((members[0].user == user and members[1].user.id == friendId)
-            or (members[1].user == user and members[0].user.id == friendId)):
+            if ((members[0].user == user and members[1].user.id == receiver)
+            or (members[1].user == user and members[0].user.id == receiver)):
                 if not channel.is_active:
                     channel.is_active = True
                     channel.save()
