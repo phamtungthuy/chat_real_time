@@ -347,6 +347,7 @@ def friendAccept(consumer, receiver, data):
             or (members[1].user == user and members[0].user.id == friendId)):
                 if not channel.is_active:
                     channel.is_active = True
+                    channel.save()
                     data.update({
                         "receiver": receiver,
                         "sender": user.id,
