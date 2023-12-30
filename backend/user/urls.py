@@ -48,6 +48,9 @@ urlpatterns = [
     path('all/', UserViewSet.as_view({
         'get': 'getAllUsers',
     })),
+    path('recent/all/', UserViewSet.as_view({
+       'get': 'getRecentAllUsers', 
+    })),
     
     # path('<int:userId>/', UserViewSet.as_view({
     #     'get': 'retrieve',
@@ -78,6 +81,9 @@ urlpatterns = [
     })),
     path('friend/<int:friendId>/', FriendViewSet.as_view({
         'delete': 'deleteFriend',
+    })),
+    path('<int:userId>/friends/', FriendViewSet.as_view({
+        'get': 'getFriendListOfAUser'
     })),
 
     # NotificationViewSet

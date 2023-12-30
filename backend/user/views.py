@@ -16,7 +16,7 @@ import uuid, json, base64
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .utils import sendVerificationEmail, resendVerificationEmail
-
+from datetime import date, timedelta
 @extend_schema(tags=['User'])
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -40,6 +40,18 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.serializer_class(users, many=True)
         return Response({"message": "Get all users successfully", "data": serializer.data})
 
+    def getRecentAllUsers(self, request):
+        totalUsers = self.queryset.all()
+        recentUsers = self.queryset.filter(date_joined__gte=(date.today() - timedelta(days=7)))
+        serializer = self.serializer_class(recentUsers, many=True)
+        totalUsersSerializer = self.serializer_class(totalUsers, many=True)
+        percentage = 0
+        if len(totalUsersSerializer.data) > 0:
+            percentage = float(format(len(serializer.data) / len(totalUsersSerializer.data), ".4f"))
+        return Response({"message": "Get recent all users successfully", "data": {
+            'data': serializer.data,
+            'percentage': percentage
+        }})
 
     @retrieveUserSchema
     def retrieveUser(self, request):
@@ -315,7 +327,16 @@ class FriendViewSet(viewsets.ViewSet):
     query_set = Friend.objects.all()
     serializer_class = FriendSerializer
     permission_classes = [IsAuthenticated]
-
+    
+    def get_permissions(self):
+        admin_actions = ['getFriendListOfAUser']
+        if self.action in admin_actions:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+            
+        return [permission() for permission in permission_classes]
+    
     @getFriendListSchema
     def getFriendList(self, request):
         user = request.user
@@ -342,6 +363,14 @@ class FriendViewSet(viewsets.ViewSet):
             return Response({'message': 'Delete friend successfully'})
         except Friend.DoesNotExist:
             return Response({"message": "Friend not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    def getFriendListOfAUser(self, request, userId):
+        try:
+            friends = self.query_set.filter(user_id=userId)
+            serializer = self.serializer_class(friends, many=True)
+            return Response({"message": "Get Friend List of user successfully", 'data': serializer.data}, status=status.HTTP_200_OK)
+        except:
+            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 @extend_schema(tags=['Notification'])
 class NotificationViewSet(viewsets.ViewSet):

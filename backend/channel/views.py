@@ -13,6 +13,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import json, uuid
 from .schema import *
+from datetime import date, timedelta
 
 
 @extend_schema(tags=['Channel'])
@@ -34,6 +35,19 @@ class ChannelViewSet(viewsets.ModelViewSet):
         channels = self.queryset.all()
         serializer = self.serializer_class(channels, many=True)
         return Response({"message": "Get all channels successfully", "data": serializer.data})
+
+    def getRecentAllChannels(self, request):
+        totalChannels = self.queryset.all()
+        recentChannels = self.queryset.filter(create_at__gte=(date.today() - timedelta(days=7)))
+        serializer = self.serializer_class(recentChannels, many=True)
+        totalChannelsSerializer = self.serializer_class(totalChannels, many=True)
+        percentage = 0
+        if len(totalChannelsSerializer.data) > 0:
+            percentage = float(format(len(serializer.data) / len(totalChannelsSerializer.data), ".4f"))
+        return Response({"message": "Get recent all channels successfully", "data": {
+            'data': serializer.data,
+            'percentage': percentage
+        }})
 
     @deleteChannelSchema
     def deleteChannel(self, request, channelId):
