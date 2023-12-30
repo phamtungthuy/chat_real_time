@@ -11,6 +11,9 @@ urlpatterns = [
     path('all/', ChannelViewSet.as_view({
         'get': 'getAllChannels',
     })),
+    path('recent/all/', ChannelViewSet.as_view({
+        'get': 'getRecentAllChannels'
+    })),
     path('upload/avatar/', ChannelViewSet.as_view({
         'post': 'uploadChannelAvatar',
     })),
