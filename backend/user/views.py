@@ -5,30 +5,27 @@ from drf_spectacular.types import OpenApiTypes
 from .serializer import UserSerializer, FriendSerializer, UserProfileSerializer, NotificationSerializer
 from django.contrib.auth.models import User
 from user.models import UserProfile, Friend, Notification
+from channel.models import Channel
 from channel.serializer import ChannelSerializer
-from .response import ResponseSerializer, SuccessResponseSerializer
+from .schema import *
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.db.models import Q
 from rest_framework_simplejwt.tokens import RefreshToken
-import uuid
+import uuid, json, base64
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-import json
-
-from django.core import mail
-import random
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-
+from .utils import sendVerificationEmail, resendVerificationEmail
+from datetime import date, timedelta
 @extend_schema(tags=['User'])
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
    
     def get_permissions(self):
-        admin_actions = ['getAllUsers', 'deleteUser']
-        if self.action == 'retrieve':
+        admin_actions = ['getAllUsers', 'banUser']
+        authenticate_actions = ['retrieveUser', 'getChannelList']
+        if self.action in authenticate_actions:
             permission_classes = [IsAuthenticated]
         elif self.action in admin_actions:
             permission_classes = [IsAdminUser]
@@ -37,212 +34,179 @@ class UserViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 
+    @getAllUsersSchema
     def getAllUsers(self, request):
-        users = self.queryset
+        users = self.queryset.all()
         serializer = self.serializer_class(users, many=True)
         return Response({"message": "Get all users successfully", "data": serializer.data})
 
+    def getRecentAllUsers(self, request):
+        totalUsers = self.queryset.all()
+        recentUsers = self.queryset.filter(date_joined__gte=(date.today() - timedelta(days=7)))
+        serializer = self.serializer_class(recentUsers, many=True)
+        totalUsersSerializer = self.serializer_class(totalUsers, many=True)
+        percentage = 0
+        if len(totalUsersSerializer.data) > 0:
+            percentage = float(format(len(serializer.data) / len(totalUsersSerializer.data), ".4f"))
+        return Response({"message": "Get recent all users successfully", "data": {
+            'data': serializer.data,
+            'percentage': percentage
+        }})
 
-    # @extend_schema(
-    #     responses={
-    #         200: OpenApiResponse(response=SuccessResponseSerializer,
-    #                              description="Operations successfully"),
-    #         404: OpenApiResponse(response=ResponseSerializer,
-    #                              description="User not found!")
-    #     }
-    #     # more customizations
-    # )
-    # def retrieve(self, request, id=None, username=None):
-    #     try:
-    #         if id is None:
-    #             user = User.objects.get(username=username)
-    #         else:
-    #             user = User.objects.get(id=id)
-    #         serializer = UserSerializer(user)
-    #     except User.DoesNotExist:
-    #         return Response({'message': f'User not found'}, status=status.HTTP_404_NOT_FOUND)
-    #     return Response({'message': 'Successfully',
-    #                      'data': serializer.data}, status=status.HTTP_200_OK)
+    @retrieveUserSchema
+    def retrieveUser(self, request):
+        try:
+            user = request.user
+            serializer = self.serializer_class(user, many=False)
+            return Response({'message': 'Get user successfully', 'data': serializer.data}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    @extend_schema(
-        request={
-            "multipart/form-data": {
-                "type": "object",
-                "properties": {
-                    "username": {"type": "string", "required": True},
-                    "password": {"type": "string"},
-                    "email": {"type": "string"}},
-            },
-        },
-        responses = {
-            200: OpenApiResponse(response=SuccessResponseSerializer, description='Operations successfully'),
-            400: OpenApiResponse(response=ResponseSerializer, description='Bad Request')
-        }
-    )
+
+    @signUpSchema
     def signup(self, request):
         data = request.data
         serializer = UserSerializer(data=data)
-        if serializer.is_valid():
+        try:
+            serializer.is_valid(raise_exception=True)
             user = serializer.save()
-            # Generate six number verification code
-            verification_code = str(random.randint(0, 999999))
-            while len(verification_code) < 6:
-                verification_code = "0" + verification_code
-            # Create user profile ref to User
-            userProfile = UserProfile.objects.create(user=user, verification_code=verification_code)
-            # Send verification code via user email
-            html_message = render_to_string('email_form.html', {'verification_code': verification_code})
-            plain_message = f"Mã xác thực của bạn: {verification_code}"
-            mail.send_mail(
-                subject="Verification code",
-                from_email='Schat <schatemail.system@gmail.com>',
-                message=plain_message,
-                recipient_list=[user.email],
-                html_message=html_message
-            )
+            sendVerificationEmail(user, user.email)
             return Response({"message": "Verification code was sent", "data": serializer.data})
-        message = ""
-        for key, value in serializer.errors.items():
-            message += f'{value[0]} ({key})'
-            break
-        return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+        except serializers.ValidationError as e:
+            message = ""
+            for key, value in serializer.errors.items():
+                message += f'{value[0]} ({key})'
+                break
+            if not message: message = e.args[0]
+            return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
     
-
+    @resendVerificationSchema
     def resendVerification(self, request):
         data = request.data
         username = data.get('username')
         email = data.get('email')
         try:
             user = User.objects.get(username=username)
-            userProfile = UserProfile.objects.get(user=user)
-            if userProfile.verified:
+            if not resendVerificationEmail(user, email):
                 return Response({'message': 'User has been already verified'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Verification code was resent", 'data': data})
         except User.DoesNotExist:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        # Generate six number verification code
-        verification_code = str(random.randint(0, 999999))
-        while len(verification_code) < 6:
-            verification_code = "0" + verification_code
-        userProfile.verification_code = verification_code
-        userProfile.save()
-        # Send verification code via user email
-        html_message = render_to_string('email_form.html', {'verification_code': verification_code})
-        plain_message = f"Mã xác thực của bạn: {verification_code}"
-        mail.send_mail(
-            subject="Verification code",
-            from_email='Schat <schatemail.system@gmail.com>',
-            message=plain_message,
-            recipient_list=[user.email],
-            html_message=html_message
-        )
-        # Update email
-        user.email = email
-        user.save()
-        return Response({"message": "Verification code was resent", "data": data})
         
-
+    @verifyEmailSchema
     def verifyEmail(self, request):
         data = request.data
-        username = data.get('username')
         verification_code = data.get('verification_code')
-        try:
-            user = User.objects.get(username=username)
+        email_base64 = verification_code[:-6]
+        email_bytes = base64.b64decode(email_base64.encode("ascii"))
+        email = email_bytes.decode("ascii")
+        users = User.objects.filter(email=email)
+        if not users:
+            return Response({'message': 'User not found'},status=status.HTTP_404_NOT_FOUND)
+        for user in users:
             userProfile = UserProfile.objects.get(user=user)
             if userProfile.verified:
                 return Response({'message': 'User has been already verified'}, status=status.HTTP_400_BAD_REQUEST)
-        except User.DoesNotExist:
-            return Response({'message': 'User not found'},status=status.HTTP_404_NOT_FOUND)
-        # Verify
-        if userProfile.verification_code == verification_code:
-            userProfile.verified = True
-            userProfile.save()
-            return Response({"message": "User has been verified successfully"})
-        else: 
-            return Response({"message": "Verification code not correct"})
+            elif (userProfile.verification_code == verification_code and userProfile.verification_code is not None):
+                userProfile.verified = True
+                userProfile.verification_code = None
+                userProfile.save()
+                return Response({"message": "User has been verified successfully"})
+        return Response({"message": "Verification code not correct"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+    @loginSchema
     def login(self, request):
-        username = request.data.get('username')
+        username = request.data.get('username', None)
+        email = request.data.get('email', None)
         password = request.data.get('password')
         try:
-            user = User.objects.get(username=username)
-            if (user.check_password(password)):
-                userProfile = UserProfile.objects.get(user=user)
-                if (userProfile.verified):
-                    refresh = RefreshToken.for_user(user)
-                    token = {
-                        'refresh': str(refresh),
-                        'access': str(refresh.access_token)
-                    }
-                    return Response({"message": "Login successfully", "data": token})
-                else:
-                    return Response({"message": "User was not verified"}, status=status.HTTP_403_FORBIDDEN)
-            else:
-                return Response("Password not match")
-        except User.DoesNotExist:
-            return Response({"message": "Username not match"}, status=status.HTTP_404_NOT_FOUND)
-
-
-
-    # @extend_schema(
-    #     request={
-    #         "multipart/form-data": {
-    #             "type": "object",
-    #             "properties": {
-    #                 "password": {"type": "string"},
-    #                 "email": {"type": "string"}},
-    #         },
-    #     },
-    #     responses={
-    #         200: OpenApiResponse(response=SuccessResponseSerializer,
-    #                              description="Operations successfully"),
-    #         404: OpenApiResponse(response=ResponseSerializer,
-    #                              description="User not found!")
-    #     }
-    #     # more customizations
-    # )
-    # def update(self, request, id=None, username=None):
-    #     try:
-    #         if id is None:
-    #             user = User.objects.get(username=username)
-    #         else:
-    #             user = User.objects.get(id=id)
-    #         data = request.data
-    #         serializer = UserSerializer(instance=user, data=data)
-    #         if serializer.is_valid():
-    #             serializer.save()
-    #             return Response({'message': 'Updated successfuly'}, status=status.HTTP_200_OK)
-    #         message = ""
-    #         for key, value in serializer.errors.items():
-    #             message += f'{value[0]} ({key})'
-    #             break
-    #         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
-    #     except User.DoesNotExist:
-    #         return Response({'message': f'User not found'},status=status.HTTP_404_NOT_FOUND)
-    #     return Response({'message': 'Error when updating'}, status=status.HTTP_400_BAD_REQUEST)
-    
-
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(response=SuccessResponseSerializer,
-                                 description="Operations successfully"),
-            404: OpenApiResponse(response=ResponseSerializer,
-                                 description="User not found!")
-        }
-        # more customizations
-    )
-    def deleteUser(self, request, userId=None, username=None):
-        try:
-            if id is None:
+            if username is not None:
                 user = User.objects.get(username=username)
             else:
-                user = User.objects.get(pk=userId)
+                user = User.objects.get(email=email)
+            if (user.check_password(password)):
+                userProfile = UserProfile.objects.get(user=user)
+                if user.is_active:
+                    if (userProfile.verified):
+                        refresh = RefreshToken.for_user(user)
+                        token = {
+                            'refresh': str(refresh),
+                            'access': str(refresh.access_token)
+                        }
+                        return Response({"message": "Login successfully", "data": token})
+                    else:
+                        return Response({"message": "User has not been verified"}, status=status.HTTP_401_UNAUTHORIZED)
+                else:
+                    return Response({"message": "User has been banned"}, status=status.HTTP_403_FORBIDDEN)
+            else:
+                return Response({'message': "Password not match"}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({"message": "Username or email not match"}, status=status.HTTP_404_NOT_FOUND)
+
+    @changePasswordSchema
+    def changePassword(self, request):
+        user = request.user
+        oldPassword = request.data.get('oldPassword', None)
+        newPassword = request.data.get('newPassword', None)
+        if oldPassword is None or newPassword is None:
+            return Response({'message': 'Both old password and new password must be provided'}, status=status.HTTP_400_BAD_REQUEST)
+        if (user.check_password(oldPassword)):
+            serializer = self.serializer_class(instance=user, data={'password': newPassword}, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Update password successfuly'}, status=status.HTTP_200_OK)
+            message = ""
+            for key, value in serializer.errors.items():
+                message += f'{value[0]} ({key})'
+                break
+            return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'message': 'Password not match'}, status=status.HTTP_400_BAD_REQUEST)
+            
+    @changeEmailSchema
+    def changeEmail(self, request):
+        user = request.user
+        newEmail = request.data.get('newEmail', None)
+        if newEmail is None:
+            return Response({'message': 'New email must be provided if you want to change email'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(instance=user, data={'email': newEmail}, partial=True)
+        if serializer.is_valid():
+            sendVerificationEmail(user, newEmail)
+            return Response({'message': 'Verification code was sent to your new email'}, status=status.HTTP_200_OK)
+        message = ""
+        for key, value in serializer.errors.items():
+            message += f'{value[0]} ({key})'
+            break
+        return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
+
+    @verifyChangeEmailSchema
+    def verifyChangeEmail(self, request):
+        user = request.user
+        userProfile = user.profile
+        verification_code = request.data.get('verification_code', None)
+        if (verification_code == userProfile.verification_code and userProfile.verification_code is not None):
+            newEmail_base64 = verification_code[:-6]
+            newEmail_bytes = base64.b64decode(newEmail_base64.encode("ascii"))
+            newEmail = newEmail_bytes.decode("ascii")
+            user.email = newEmail
+            user.save()
+            userProfile.verification_code = None
+            userProfile.save()
+            return Response({'message': 'Change email successfuly'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'Verification code not correct'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @banUserSchema
+    def banUser(self, request, userId):
+        try:
+            user = self.queryset.get(pk=userId)
             text_data_json = {
-                "action": "delete_user",
+                "action": "ban_user",
                 "target": "user",
                 "targetId": user.id,
                 "data": {
-                    "message": "Your account has been deleted by admin"
+                    "message": "Your account has been banned by admin"
                 }
             }
             channel_layer = get_channel_layer()
@@ -250,25 +214,37 @@ class UserViewSet(viewsets.ModelViewSet):
                 "type": "chat.send",
                 "text_data_json": text_data_json
             })
-            user.delete()
+            user.is_active = False
+            user.save()
+            return Response({'message': 'Banned user successfully'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        return Response({'message': 'Delete user successfully'}, status=status.HTTP_200_OK)
     
+    @banUserSchema
+    def unbanUser(self, request, userId):
+        try:
+            user = self.queryset.get(pk=userId)
+            user.is_active = True
+            user.save()
+            return Response({'Unbanned user successfully'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
+    @getChannelListSchema
     def getChannelList(self, request):
         user = request.user
         members = user.members.all()
-        channels = [member.channel for member in members]
+        channels = [member.channel for member in members if member.channel.is_active]
         serializer = ChannelSerializer(channels, many=True)
         return Response({'message': 'Get channel list successfully', 'data': serializer.data})
 
-
+@extend_schema(tags=['User Profile'])
 class UserProfileViewSet(viewsets.ViewSet):
     query_set = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
+    @getUserProfileSchema
     def getUserProfile(self, request, userId):
         try:
             user = request.user
@@ -287,24 +263,41 @@ class UserProfileViewSet(viewsets.ViewSet):
         except UserProfile.DoesNotExist:
             return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    @getSelfProfileSchema
+    def getSelfProfile(self, request):
+        try:
+            user = request.user
+            userProfile = self.query_set.get(user=user)
+            serializer = self.serializer_class(userProfile, many=False)
+            return Response({"message": "Get self profile successfully", "data": serializer.data})
+        except UserProfile.DoesNotExist:
+            return Response({"message": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    @updateUserProfileSchema
     def updateUserProfile(self, request):
         user = request.user
         data = request.data
         userProfile = self.query_set.get(user=user)
-        serializer = UserProfileSerializer(instance=userProfile, data=data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Update user profile successfuly', "data": serializer.data})
+        profileSerializer = self.serializer_class(instance=userProfile, data=data, partial=True)
+        userSerializer = UserSerializer(instance=user, data=data, partial=True)
+        if userSerializer.is_valid() and profileSerializer.is_valid():
+            userSerializer.save()
+            profileSerializer.save()
+            return Response({'message': 'Update user profile successfuly', "data": profileSerializer.data})
         message = ""
-        for key, value in serializer.errors.items():
+        if userSerializer.errors:
+            errors = userSerializer.errors
+        else:
+            errors = profileSerializer.errors
+        for key, value in errors.items():
             message += f'{value[0]} ({key})'
             break
         return Response({'message': message}, status=status.HTTP_400_BAD_REQUEST)
 
-
+    @uploadUserAvatarSchema
     def uploadUserAvatar(self, request):
         file_obj = request.FILES.get('file')
+        print(request.FILES)
         # Validate file
         if file_obj is None:
             return Response({"message": "File not provided"}, status=status.HTTP_400_BAD_REQUEST) 
@@ -329,37 +322,75 @@ class UserProfileViewSet(viewsets.ViewSet):
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(tags=['Friend'])
 class FriendViewSet(viewsets.ViewSet):
     query_set = Friend.objects.all()
     serializer_class = FriendSerializer
     permission_classes = [IsAuthenticated]
-
+    
+    def get_permissions(self):
+        admin_actions = ['getFriendListOfAUser']
+        if self.action in admin_actions:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+            
+        return [permission() for permission in permission_classes]
+    
+    @getFriendListSchema
     def getFriendList(self, request):
         user = request.user
         friendList = user.friends.all()
         serializer = self.serializer_class(friendList, many=True)
         return Response({'message': 'Get friend list successfully', 'data': serializer.data})
 
+    @deleteFriendSchema
     def deleteFriend(self, request, friendId):
         user = request.user
         try:
             friend = Friend.objects.filter(Q(user=user, friend_with=friendId) | Q(user_id=friendId, friend_with=user))
             friend.delete()
+            targetChannel = None
+            for channel in Channel.objects.all():
+                members = channel.members.all()
+                if members.count() == 2:
+                    if ((members[0].user == user and members[1].user.id == friendId)
+                    or (members[1].user == user and members[0].user.id == friendId)):
+                        targetChannel = channel
+                        break;
+            targetChannel.is_active = False
+            targetChannel.save()
             return Response({'message': 'Delete friend successfully'})
         except Friend.DoesNotExist:
             return Response({"message": "Friend not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    def getFriendListOfAUser(self, request, userId):
+        try:
+            friends = self.query_set.filter(user_id=userId)
+            serializer = self.serializer_class(friends, many=True)
+            return Response({"message": "Get Friend List of user successfully", 'data': serializer.data}, status=status.HTTP_200_OK)
+        except:
+            return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
+@extend_schema(tags=['Notification'])
 class NotificationViewSet(viewsets.ViewSet):
     query_set = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
 
+    @getNotificationListSchema
     def getNotificationList(self, request):
         user = request.user
         notificationList = user.notifications.all()
         serializer = self.serializer_class(notificationList, many=True)
         return Response({'message': 'Get notification list successfully', 'data': serializer.data})
+
+    @getSentFriendRequestListSchema
+    def getSentFriendRequestList(self, request):
+        user = request.user
+        sentFriendRequestList = Notification.objects.filter(sender=user, notification_type='friend_request')
+        serializer = self.serializer_class(sentFriendRequestList, many=True)
+        return Response({'message': 'Get sent friend request list successfully', 'data': serializer.data})
 
 
     

@@ -14,8 +14,8 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Friend)
 class FriendAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'user', 'friend_with')
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'receiver', 'sender', 'notification_type')

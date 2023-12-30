@@ -4,23 +4,19 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-#SECRET_KEY = 'django-insecure-(ai_@m(dv_hp_sjh$c+==5lx5_3keo-40a83_4lh!o%ow)q^(7'
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
 DEBUG = os.getenv('DEBUG')
+
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS=['http://16.162.46.190', 'http://16.162.46.190:8000']
 
 # Application definition
 
@@ -33,7 +29,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "drf_spectacular",
+    'django_rest_passwordreset',
+    'drf_spectacular',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -43,7 +40,7 @@ INSTALLED_APPS = [
     'user',
     'report',
     'chat',
-    # 'silk'
+    'search'
 ]
 
 MIDDLEWARE = [
@@ -55,7 +52,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'silk.middleware.SilkyMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -63,7 +59,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "build"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -77,6 +73,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
+ASGI_APPLICATION = 'backend.asgi.application'
+
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -89,6 +87,9 @@ DATABASES = {
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         'HOST': os.getenv('DATABASE_HOST'),
         'PORT': os.getenv('DATABASE_PORT'),
+        'OPTIONS': {
+            'sql_mode': 'TRADITIONAL',
+        },
     }
 }
 
@@ -129,6 +130,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+STATICFILES_DIRS = [BASE_DIR / 'build/static']
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -137,7 +140,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ORIGIN_ALLOW_ALL = True
 
 REST_FRAMEWORK = {
-    # YOUR SETTINGS
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 
     # Set default authen as JWT
@@ -150,17 +152,17 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'Chat Real Time API',
     'DESCRIPTION': 'Your project description',
     'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=90),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-ASGI_APPLICATION = 'backend.asgi.application'
 
 CHANNEL_LAYERS = {
     "default": {
@@ -171,17 +173,14 @@ CHANNEL_LAYERS = {
     },
 }
 
-
 # CONFIG TO UPLOAD AWS S3
 AWS_S3_ACCESS_KEY_ID = os.getenv('AWS_S3_ACCESS_KEY_ID')
 AWS_S3_SECRET_ACCESS_KEY = os.getenv('AWS_S3_SECRET_ACCESS_KEY')
 AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
 AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
-
 AWS_S3_MAX_MEMORY_SIZE = 10000000 # 10MB
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_FILE_OVERWRITE = False
-
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 # STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
 
@@ -192,3 +191,25 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+
+
+# Facebook config
+FACEBOOK_CLIENT_ID = os.getenv('FACEBOOK_CLIENT_ID')
+FACEBOOK_CLIENT_SECRET = os.getenv('FACEBOOK_CLIENT_SECRET')
+FACEBOOK_REDIRECT_URI = os.getenv('FACEBOOK_REDIRECT_URI')
+
+# Google config
+GOOGLE_CONFIG = {
+    "web": {
+        "client_id": os.getenv('GOOGLE_CLIENT_ID'),
+        "project_id":"schat-402309",
+        "auth_uri":"https://accounts.google.com/o/oauth2/auth",
+        "token_uri":"https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
+        "client_secret": os.getenv('GOOGLE_CLIENT_SECRET'),
+        "redirect_uris":[os.getenv('GOOGLE_REDIRECT_URI')],
+        "javascript_origins":[os.getenv('GOOGLE_JAVASCRIPT_ORIGIN')]
+    }
+}
+
+GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI')

@@ -11,6 +11,9 @@ urlpatterns = [
     path('all/', ChannelViewSet.as_view({
         'get': 'getAllChannels',
     })),
+    path('recent/all/', ChannelViewSet.as_view({
+        'get': 'getRecentAllChannels'
+    })),
     path('upload/avatar/', ChannelViewSet.as_view({
         'post': 'uploadChannelAvatar',
     })),
@@ -26,5 +29,11 @@ urlpatterns = [
     # MemberViewSet
     path('member/<int:memberId>/', MemberViewSet.as_view({
         'delete': 'deleteMember',
-    }))
+    })),
+    path('ban/<int:channelId>/', ChannelViewSet.as_view({
+        'post': 'banChannel',
+    })),
+    path('unban/<int:channelId>/', ChannelViewSet.as_view({
+        'post': 'unbanChannel',
+    })),
 ]

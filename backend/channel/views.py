@@ -3,36 +3,53 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from drf_spectacular.utils import extend_schema
 from .models import Channel, Member
-from .schema import *
+from backend.pagination import MessagePagination
 from .serializer import ChannelSerializer,MemberSerializer
 from message.serializer import MessageSerializer
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from django.contrib.auth.models import User
 from storages.backends.s3boto3 import S3Boto3Storage
-import uuid
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-import json
+import json, uuid
+from .schema import *
+from datetime import date, timedelta
 
+
+@extend_schema(tags=['Channel'])
 class ChannelViewSet(viewsets.ModelViewSet):
     queryset = Channel.objects.all()
     serializer_class = ChannelSerializer
+    pagination_class = MessagePagination
 
     def get_permissions(self):
         admin_actions = ['getAllChannels', 'deleteChannel']
         if self.action in admin_actions:
             permission_classes = [IsAdminUser]
         else:
-            permission_classes = [IsAuthenticated]
+            permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
 
-
+    @getAllChannelsSchema
     def getAllChannels(self, request):
-        channels = self.queryset
+        channels = self.queryset.all()
         serializer = self.serializer_class(channels, many=True)
         return Response({"message": "Get all channels successfully", "data": serializer.data})
 
+    def getRecentAllChannels(self, request):
+        totalChannels = self.queryset.all()
+        recentChannels = self.queryset.filter(create_at__gte=(date.today() - timedelta(days=7)))
+        serializer = self.serializer_class(recentChannels, many=True)
+        totalChannelsSerializer = self.serializer_class(totalChannels, many=True)
+        percentage = 0
+        if len(totalChannelsSerializer.data) > 0:
+            percentage = float(format(len(serializer.data) / len(totalChannelsSerializer.data), ".4f"))
+        return Response({"message": "Get recent all channels successfully", "data": {
+            'data': serializer.data,
+            'percentage': percentage
+        }})
 
+    @deleteChannelSchema
     def deleteChannel(self, request, channelId):
         try:
             channel = self.queryset.get(pk=channelId)
@@ -54,13 +71,12 @@ class ChannelViewSet(viewsets.ModelViewSet):
         except Channel.DoesNotExist:
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
-
+    @createChannelSchema
     def createChannel(self, request):
         data = request.data
         creator = request.user
         title = data.get('title')
         members = data.get('members')
-
         if len(members) < 3:
             return Response({"message": "A channel needs at least three members"}, status=status.HTTP_400_BAD_REQUEST)
         try:
@@ -89,6 +105,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 
+    @getMediaListSchema
     def getMediaList(self, request, channelId):
         try:
             channel = self.queryset.get(pk=channelId)
@@ -99,6 +116,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
+    @getMemberListSchema
     def getMemberList(self, request, channelId):
         try:
             channel = self.queryset.get(pk=channelId)
@@ -114,12 +132,16 @@ class ChannelViewSet(viewsets.ModelViewSet):
         try:
             channel = self.queryset.get(pk=channelId)
             messageList = channel.messages.all()
+            messageList = self.paginate_queryset(messageList)
             serializer = MessageSerializer(messageList, many=True)
-            return Response({'message': 'Get message list successfully', 'data': serializer.data})
-        except:
+            return self.get_paginated_response({'message': 'Get message list successfully', 'data': serializer.data})
+            # return Response({'message': 'Get message list successfully', 'data': serializer.data})
+        except Exception as e:
+            print(repr(e))
             return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
+    @uploadChannelAvatarSchema
     def uploadChannelAvatar(self, request):
         file_obj = request.FILES.get('file')
         # Validate file
@@ -161,8 +183,26 @@ class ChannelViewSet(viewsets.ModelViewSet):
             return Response({"message": "Update channel avatar successfully", "data": data})
         except Exception as e:
             return Response({'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def banChannel(self, request, channelId):
+        try:
+            channel = self.queryset.get(pk=channelId)
+            channel.is_active = False
+            channel.save()
+            return Response({'Banned user successfully'}, status=status.HTTP_200_OK)
+        except Channel.DoesNotExist:
+            return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    def unbanChannel(self, request, channelId):
+        try:
+            channel = self.queryset.get(pk=channelId)
+            channel.is_active = True
+            channel.save()
+            return Response({'Banned user successfully'}, status=status.HTTP_200_OK)
+        except Channel.DoesNotExist:
+            return Response({'message': 'Channel not found'}, status=status.HTTP_404_NOT_FOUND)
             
-
+@extend_schema(tags=['Member', 'Channel'])
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer

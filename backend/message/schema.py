@@ -1,39 +1,51 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from rest_framework import serializers
 from .serializer import MessageSerializer, ReactionSerializer, EmojiSerializer
-
+from .schemaSerializer import *
 # Message schema
 
 createMessageSchema = extend_schema(
     summary = 'Create message',
+    description="You need provide access token to create a message to send",
     request = MessageSerializer,
     responses = {
-        200: OpenApiResponse(response=MessageSerializer,
+        200: OpenApiResponse(response=SuccessCreateMessageSerializer,
                              description="Create message successfully"),
-        400: OpenApiResponse(description='Bad request')
+        400: OpenApiResponse(response=GeneralMessageSerializer, description='Have some problems when creating message'),
+        401: OpenApiResponse(response=GeneralMessageSerializer, description="You need to provide access token to make this action")
     }
+)
+
+uploadImageSchema = extend_schema(
+    summary= "Upload image in conversation",
+    description = "You need to provided access token to make this action",
+    request=UploadImageMessageRequestSerializer
 )
 
 editMessageSchema = extend_schema(
     summary = "Edit message",
+    description="You need provided access token to edit a particular message",
     request = inline_serializer(
-        name = 'editMessageSchema',
+        name = 'editMessageRequestSerializer',
         fields = {
             'content': serializers.CharField()
         }
     ),
     responses = {
-        200: OpenApiResponse(response=MessageSerializer, description="Edit message successfully"),
-        400: OpenApiResponse(description="Bad request"),
-        404: OpenApiResponse(description="Message not found")
+        200: OpenApiResponse(response=SuccessEditMessageSerializer, description="Edit message successfully"),
+        400: OpenApiResponse(response=GeneralMessageSerializer, description="Have some problesm while editing message!"),
+        401: OpenApiResponse(response=GeneralMessageSerializer, description="You need to provided access token to make this action"),
+        404: OpenApiResponse(response=GeneralMessageSerializer, description="Message not found")
     }
 )
 
 deleteMessageSchema = extend_schema(
     summary = 'Delete message',
+    description="You need to provide access token to delete a particular message",
     responses = {
-        200: OpenApiResponse(description="Delete message successfully"),
-        404: OpenApiResponse(description="Message not found")
+        200: OpenApiResponse(response=GeneralMessageSerializer, description="Delete message successfully"),
+        401: OpenApiResponse(response=GeneralMessageSerializer, description="You need to provided access token to make this action"),
+        404: OpenApiResponse(response=GeneralMessageSerializer, description="Message not found")
     }
 )
 

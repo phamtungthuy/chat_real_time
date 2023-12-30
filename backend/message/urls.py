@@ -12,17 +12,17 @@ urlpatterns = [
     })),
 
     # Reaction url
-    path('reaction/all/<int:messageId>/', ReactionViewSet.as_view({
+    path('channel-reactions/<int:channelId>/', ReactionViewSet.as_view({
         'get': 'getReactionList',
     })),
-    path('reaction/', ReactionViewSet.as_view({
-       'post': 'createReaction',
-    })),
-    path('reaction/<int:reactionId>/', ReactionViewSet.as_view({
-        'put': 'changeReaction',
-        'delete': 'removeReaction',
-    })),
+    # path('reaction/', ReactionViewSet.as_view({
+    #    'post': 'createReaction',
+    # })),
+    # path('reaction/<int:reactionId>/', ReactionViewSet.as_view({
+    #     'put': 'changeReaction',
+    #     'delete': 'removeReaction',
+    # })),
 
     # Emoji url
-    path('emoji/all/', getEmojiList),
+    path('emojis/', getEmojiList),
 ]
