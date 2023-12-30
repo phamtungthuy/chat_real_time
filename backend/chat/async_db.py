@@ -153,6 +153,7 @@ text_json_data = {
 @database_sync_to_async
 def addMember(channelId, data):
     data['channel'] = channelId
+    data['user'] = User.objects.get(pk=data['user'])
     serializer = MemberSerializer(data=data)
     if serializer.is_valid(raise_exception=True):
         serializer.save()
