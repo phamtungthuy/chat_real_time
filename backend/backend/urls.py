@@ -6,17 +6,16 @@ from .token import CustomTokenObtainPairView, CustomTokenRefreshView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
-    # path('', TemplateView.as_view(template_name='index.html')),
     path('', TemplateView.as_view(template_name='index.html')),
     path('admin/', TemplateView.as_view(template_name='index.html')),
     path('signup/', TemplateView.as_view(template_name='index.html')),
     path('signin/', TemplateView.as_view(template_name='index.html')),
     path('reset-password/', TemplateView.as_view(template_name='index.html')),
  
-    path('', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    # path('', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     # path('schema/', SpectacularAPIView.as_view(), name='schema'),
     # path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
     # path('silk/', include('silk.urls', namespace='silk')),
 
     path('chat/', include('chat.urls')),
