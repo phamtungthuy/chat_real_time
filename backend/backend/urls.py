@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView 
 from .token import CustomTokenObtainPairView, CustomTokenRefreshView
@@ -12,6 +12,7 @@ urlpatterns = [
     path('signin/', TemplateView.as_view(template_name='index.html')),
     path('reset-password/', TemplateView.as_view(template_name='index.html')),
  
+
     # path('', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     # path('schema/', SpectacularAPIView.as_view(), name='schema'),
     # path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
@@ -25,6 +26,8 @@ urlpatterns = [
     path('api/user/', include('user.urls')),
     path('api/report/', include('report.urls')),
     path('api/search/', include('search.urls')),
+
+    re_path(r'^.*$', TemplateView.as_view(template_name='index.html')),
     
     # path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     # path('api/token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
