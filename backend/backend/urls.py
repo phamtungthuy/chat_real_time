@@ -13,7 +13,7 @@ urlpatterns = [
     #path('signin/', TemplateView.as_view(template_name='index.html')),
     #path('reset-password/', TemplateView.as_view(template_name='index.html')),
  
-    path('doc/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('admin/', admin.site.urls),
