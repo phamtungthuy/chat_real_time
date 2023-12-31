@@ -13,12 +13,11 @@ urlpatterns = [
     #path('signin/', TemplateView.as_view(template_name='index.html')),
     #path('reset-password/', TemplateView.as_view(template_name='index.html')),
  
-    path('', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    # path('schema/', SpectacularAPIView.as_view(), name='schema'),
-    # path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('doc/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('admin/', admin.site.urls),
     # path('silk/', include('silk.urls', namespace='silk')),
-
     path('chat/', include('chat.urls')),
 
     path('api/channel/', include('channel.urls')),
