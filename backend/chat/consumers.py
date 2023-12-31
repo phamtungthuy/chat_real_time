@@ -123,30 +123,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if action == ACTION.FRIEND_DENY:
             return await async_db.friendDeny(self.user, targetId)
 
-        # Creator action
-        if action == ACTION.ADD_MEMBER:
-            if async_db.isCreator(self.user, targetId):
+
+        if (await async_db.isCreator(self.user, targetId)):
+            if action == ACTION.ADD_MEMBER:
                 return await async_db.addMember(targetId, data)
-            else:
-                raise Exception("User is not creator to perform this action")
-        if action == ACTION.REMOVE_MEMBER:
-            if async_db.isCreator(self.user, targetId):
+            if action == ACTION.REMOVE_MEMBER:
                 return await async_db.removeMember(data)
-            else:
-                raise Exception("User is not creator to perform this action")
-        if action == ACTION.SET_CHANNEL_TITLE:
-            if async_db.isCreator(self.user, targetId):
+            if action == ACTION.SET_CHANNEL_TITLE:
                 return await async_db.setChannelTitle(targetId, data)
-            else:
-                raise Exception("User is not creator to perform this action")
-        if action == ACTION.CHANGE_CREATOR:
-            if async_db.isCreator(self.user, targetId):
+            if action == ACTION.CHANGE_CREATOR:
                 return await async_db.changeCreator(self.user, data)
-            else:
-                raise Exception("User is not creator to perform this action")
-        if action == ACTION.DISBAND_CHANNEL:
-            if async_db.isCreator(self.user, targetId):
+            if action == ACTION.DISBAND_CHANNEL:
                 return await async_db.disbandChannel(targetId, data)
-            else:
-                raise Exception("User is not creator to perform this action")
+        else:
+            raise Exception("User is not creator to perform this action")
+
         return data

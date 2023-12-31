@@ -32,15 +32,15 @@ class ChannelSerializer(serializers.ModelSerializer):
 
 
 class MemberSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
-
     class Meta:
         model = Member
         fields = '__all__'
 
-    def get_user(self, obj):
-        serializer = UserSerializer(obj.user, many=False)
-        return serializer.get()
+    def to_representation(self, instance):
+        data = super(MemberSerializer, self).to_representation(instance)
+        userSerializer = UserSerializer(instance.user, many=False)
+        data['user'] = userSerializer.get()
+        return data
 
     def validate_nickname(self, value):
         value = value.strip()
